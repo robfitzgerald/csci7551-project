@@ -1,48 +1,12 @@
-#ifndef csci7551_project_graph2
-#define csci7551_project_graph2
+#ifndef csci7551_project_graph
+#define csci7551_project_graph
 
 #include <vector>
 #include <math.h>
+#include "Properties.h"
 
 namespace csci7551_project
 {
-  class Property 
-  {
-  public:
-    virtual double cost() = 0;
-    virtual double cost(double) = 0;
-  };
-
-  class TestProperty : public Property
-  {
-  public:
-    TestProperty(double w): weight(w) {}
-    double cost() { return weight; }
-    double cost(double V) { return weight * V; }
-  private:
-    double weight;
-  };
-
-  class P_Smock : public Property
-  {
-  public:
-    P_Smock(double f, double s): freeFlowTravelTime(f), steadyStateCapacity(s) 
-    {
-      flowVPH = 0;
-    }
-    void setV(double V) { flowVPH = V; }
-    double cost()
-    {
-      return freeFlowTravelTime * exp(flowVPH / steadyStateCapacity);
-    }
-    double cost(double V)
-    {
-      return freeFlowTravelTime * exp(V / steadyStateCapacity);
-    }
-  private:
-    double freeFlowTravelTime, steadyStateCapacity, flowVPH;
-  };
-
   class Vertex;
 
   class Edge
@@ -78,29 +42,14 @@ namespace csci7551_project
   class Vertex
   {
   public: 
-    Vertex() 
+    Vertex()
     {
       assignID();
     }
     int getID () const { return id; }
-    void connect(Vertex* d)
-    {
-      Edge* e = new Edge(this,d);
-      this->connectOutflow(e);
-      d->connectInflow(e);
-    }
-    void connect(Vertex* d, double w)
-    {
-      Edge* e = new Edge(this,d,w);
-      this->connectOutflow(e);
-      d->connectInflow(e);
-    }
-    void connect(Vertex* d, Property* w)
-    {
-      Edge* e = new Edge(this,d,w);
-      this->connectOutflow(e);
-      d->connectInflow(e);
-    }
+    void connect(Vertex*);
+    void connect(Vertex*, double);
+    void connect(Vertex*, Property*);
     std::vector<Edge*> getInflows() { return in; }
     std::vector<Edge*> getOutflows() { return out; }
   private:
@@ -111,9 +60,6 @@ namespace csci7551_project
     void connectInflow (Edge* e) { in.push_back(e); }
     void connectOutflow (Edge* e) { out.push_back(e); }
   };
-
-  int Vertex::s_id = 0;
-  int Edge::s_id = 0;
 }
 
 #endif
