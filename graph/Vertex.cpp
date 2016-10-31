@@ -1,4 +1,4 @@
-#include "graph.h"
+#include "Vertex.h"
 
 namespace csci7551_project
 {
@@ -22,7 +22,7 @@ namespace csci7551_project
     this->connectOutflow(e);
     d->connectInflow(e);
   }
-  
+
   int Vertex::s_id = 0;
   int Edge::s_id = 0;
 }
