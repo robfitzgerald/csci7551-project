@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <vector>
 #include <iostream>
 #include <cmath>
 
@@ -37,11 +38,21 @@ namespace csci7551_project
   {
     std::stringstream output;
     output << "----- Graph State -----\n";
+    output << "-= Vertices =----------\n";
     for (VerticesIterator i = V.begin(); i != V.end(); i++)
     {
       Vertex* v = i->second;
       RoadIntersection* vProps = v->getProps();
       output << "[" << i->first << "] (" << vProps->getX() << "," << vProps->getY() << "): " <<  v->getInflows().size() << " in, " << v->getOutflows().size() << " out." << std::endl;
+    }
+    output << "-= Edges =-------------\n";
+    for (std::vector<Edge*>::iterator i = E.begin(); i != E.end(); i++)
+    {
+      Edge* e = *i;
+      RoadIntersection* sProps = e->getSource()->getProps();
+      RoadIntersection* dProps = e->getDestination()->getProps();
+      EdgeProperty* eProps = e->getProps();
+      output << "(" << sProps->getName() << ")-->(" << dProps->getName() << ") distance: " << eProps->weight() << ", cost (V=10): " << eProps->cost(10) << std::endl;
     }
     return output.str();
   }
