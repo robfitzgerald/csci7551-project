@@ -39,7 +39,9 @@ namespace csci7551_project
       //      << "Steady state capacity: " << steadyStateCapacity << "\n"
       //      << "-----\n";
     }
-    inline void setV(double V) { flowVPH = V; }
+    inline double setV(double V) { flowVPH = V; return flowVPH; }
+    inline double incV() { flowVPH += 1; return flowVPH; }
+    inline double incV(double v) { flowVPH += v; return flowVPH; }
     inline double cost()
     {
       return freeFlowTravelTime * exp(flowVPH / steadyStateCapacity);
