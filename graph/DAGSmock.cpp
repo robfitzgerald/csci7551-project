@@ -2,6 +2,7 @@
 #include "Vertex.h"
 
 #include <string>
+#include <sstream>
 #include <map>
 #include <iostream>
 #include <cmath>
@@ -15,6 +16,7 @@ namespace csci7551_project
     Vertex* v = new Vertex(new RoadIntersection(x,y,n));
     this->V.insert(std::pair<std::string,Vertex*>(n,v));
   }
+
   void DAGSmock::addRoadway (std::string s, std::string d, double t, double c)
   {
     VerticesIterator sourceIterator = V.find(s), destinationIterator = V.find(d);
@@ -26,8 +28,22 @@ namespace csci7551_project
     {
       Vertex* source = sourceIterator->second;
       Vertex* destination = destinationIterator->second;
-      source->connect(destination, new P_Smock(cartesianDistance(source,destination),t,c));
+      Edge* newEdge = source->connect(destination, new P_Smock(cartesianDistance(source,destination),t,c));
+      E.push_back(newEdge);
     }
+  }
+
+  std::string DAGSmock::toString()
+  {
+    std::stringstream output;
+    output << "----- Graph State -----\n";
+    for (VerticesIterator i = V.begin(); i != V.end(); i++)
+    {
+      Vertex* v = i->second;
+      RoadIntersection* vProps = v->getProps();
+      output << "[" << i->first << "] (" << vProps->getX() << "," << vProps->getY() << "): " <<  v->getInflows().size() << " in, " << v->getOutflows().size() << " out." << std::endl;
+    }
+    return output.str();
   }
 
   double cartesianDistance (Vertex* s, Vertex* d)
