@@ -2,6 +2,7 @@
 #define CSCI7551_PROJECT_GRAPH_EDGEPROPERTY_H_
 
 #include <cmath>
+#include <iostream>
 
 // @TODO: calculate and store the angle of the roadway for GUI output
 
@@ -32,6 +33,11 @@ namespace csci7551_project
     P_Smock(double w, double t, double c): edgeWeight(w), freeFlowTravelTime(t), steadyStateCapacity(c) 
     {
       flowVPH = 0; 
+      std::cout << "New EdgeProperty\n" 
+           << "Distance: " << edgeWeight << "\n"
+           << "Free flow travel time: " << freeFlowTravelTime << "\n"
+           << "Steady state capacity: " << steadyStateCapacity << "\n"
+           << "-----\n";
     }
     inline void setV(double V) { flowVPH = V; }
     inline double cost()
