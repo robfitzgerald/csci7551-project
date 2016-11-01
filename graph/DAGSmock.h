@@ -3,7 +3,7 @@
 
 #include "Vertex.h"
 
-#include <unordered_map>
+#include <map>
 #include <string>
 
 namespace csci7551_project
@@ -11,13 +11,15 @@ namespace csci7551_project
   class DAGSmock
   {
   public:
-    DAG_P_Smock () {}
-    void addIntersection (int,int,string);
-    void addRoadway (string,string,double,double);
+    DAGSmock () {}
+    void addIntersection (int,int,std::string);
+    void addRoadway (std::string,std::string,double,double);
 
   private:
-    std::unordered_map<string,Vertex*> V;
+    std::map<std::string,Vertex*> V;
   };
+
+  double cartesianDistance (Vertex*,Vertex*);
 }
 
 #endif

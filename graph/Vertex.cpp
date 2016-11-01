@@ -1,8 +1,9 @@
 #include "Vertex.h"
+#include "Edge.h"
 
 namespace csci7551_project
 {
-  Vertex* Vertex::connect(Vertex* d)
+  Edge* Vertex::connect(Vertex* d)
   {
     Edge* e = new Edge(this,d);
     this->connectOutflow(e);
@@ -10,7 +11,7 @@ namespace csci7551_project
     return e;
   }
 
-  Vertex* Vertex::connect(Vertex* d, double w)
+  Edge* Vertex::connect(Vertex* d, double w)
   {
     Edge* e = new Edge(this,d,w);
     this->connectOutflow(e);
@@ -18,7 +19,7 @@ namespace csci7551_project
     return e;
   }
 
-  Vertex* Vertex::connect(Vertex* d, EdgeProperty* w)
+  Edge* Vertex::connect(Vertex* d, EdgeProperty* w)
   {
     Edge* e = new Edge(this,d,w);
     this->connectOutflow(e);

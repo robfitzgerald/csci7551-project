@@ -7,17 +7,17 @@ namespace csci7551_project
 {
   class VertexProperty {};
 
-  class RoadIntersection
+  class RoadIntersection : public VertexProperty
   {
   public:
     RoadIntersection(int lon, int lat): x(lon), y(lat) {}
-    RoadIntersection(int lon, int lat, string n): x(lon), y(lat), name(n) {}
+    RoadIntersection(int lon, int lat, std::string n): x(lon), y(lat), name(n) {}
     inline int getX() { return x; }
     inline int getY() { return y; }
-    inline string getName() { return n; }
+    inline std::string getName() { return name; }
   private:
     int x, y;
-    string name;
+    std::string name;
   };
 }
 

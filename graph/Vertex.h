@@ -11,16 +11,16 @@ namespace csci7551_project
   {
   public: 
     Vertex() { assignID(); }
-    Vertex(VertexProperty* V): props(V) {}
+    Vertex(RoadIntersection* V): props(V) {}
     inline int getID () const { return id; }
-    inline VertexProperty* getProps() { return props; }
-    Vertex* connect(Vertex*);
-    Vertex* connect(Vertex*, double);
-    Vertex* connect(Vertex*, EdgeProperty*);
+    inline RoadIntersection* getProps() { return props; }
+    Edge* connect(Vertex*);
+    Edge* connect(Vertex*, double);
+    Edge* connect(Vertex*, EdgeProperty*);
     std::vector<Edge*> getInflows() { return in; }
     std::vector<Edge*> getOutflows() { return out; }
   private:
-    VertexProperty* props;
+    RoadIntersection* props;
     std::vector<Edge*> in, out;
     inline void connectInflow (Edge* e) { in.push_back(e); }
     inline void connectOutflow (Edge* e) { out.push_back(e); }

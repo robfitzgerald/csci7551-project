@@ -47,8 +47,6 @@ namespace csci7551_project
   private:
     double freeFlowTravelTime, steadyStateCapacity, flowVPH, edgeWeight;
   };  
-
-  double cartesianDistance (Vertex*,Vertex*);
 }
 
 #endif
