@@ -46,7 +46,7 @@ namespace csci7551_project
     }
     inline double cost(double V)
     {
-      return freeFlowTravelTime * exp(V / steadyStateCapacity);
+      return freeFlowTravelTime * exp((V + flowVPH) / steadyStateCapacity);
     }
     inline double weight() const { return edgeWeight; }
     inline double distance() const { return edgeWeight; }

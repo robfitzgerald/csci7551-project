@@ -1,4 +1,4 @@
-# nodes
+! nodes
 # longitude latitude name
 0 0 A
 0 5 B
@@ -7,7 +7,7 @@
 -5 0 E
 5 0 F
 10 5 G
-# edges 
+! edges
 # sourceVertex destinationVertex freeFlowTravelTime steadyStateCapacity
 # weight is calculated from coordinate distance
 #
