@@ -42,6 +42,7 @@ namespace csci7551_project
     inline double setV(double V) { flowVPH = V; return flowVPH; }
     inline double incV() { flowVPH += 1; return flowVPH; }
     inline double incV(double v) { flowVPH += v; return flowVPH; }
+    inline double getV() { return flowVPH; }
     inline double cost()
     {
       return freeFlowTravelTime * exp(flowVPH / steadyStateCapacity);
