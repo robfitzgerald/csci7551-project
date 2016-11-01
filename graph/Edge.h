@@ -1,8 +1,8 @@
-#ifndef csci7551_project_edge
-#define csci7551_project_edge
+#ifndef CSCI7551_PROJECT_GRAPH_EDGE_H_
+#define CSCI7551_PROJECT_GRAPH_EDGE_H_
 
 #include <vector>
-#include "Property.h"
+#include "EdgeProperty.h"
 
 namespace csci7551_project
 {
@@ -17,24 +17,24 @@ namespace csci7551_project
     }
     Edge(Vertex* s, Vertex* d, double w): src(s), dest(d)
     {
-      props = new DefaultProperty(w);
+      props = new DefaultEdgeProperty(w);
       assignID();
     }
-    Edge(Vertex* s, Vertex* d, Property* p): src(s), dest(d), props(p)
+    Edge(Vertex* s, Vertex* d, EdgeProperty* p): src(s), dest(d), props(p)
     {
       assignID();
     }   
     int getID () const { return id; }
-    Vertex* getSource () const { return src; }
-    Vertex* getDestination () const { return dest; }
-    Property* getProps () const { return props; }
+    inline Vertex* getSource () const { return src; }
+    inline Vertex* getDestination () const { return dest; }
+    inline EdgeProperty* getProps () const { return props; }
   private:
     Vertex* src;
     Vertex* dest;
     int id;
-    Property* props;
+    EdgeProperty* props;
     static int s_id;
-    void assignID () { id = s_id++; }
+    inline void assignID () { id = s_id++; }
   };
 }
 
