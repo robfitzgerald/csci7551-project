@@ -5,9 +5,7 @@
 
 namespace csci7551_project
 {
-  class VertexProperty {};
-
-  class RoadIntersection : public VertexProperty
+  class RoadIntersection
   {
   public:
     RoadIntersection(int lon, int lat): x(lon), y(lat) {}

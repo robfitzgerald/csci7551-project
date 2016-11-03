@@ -32,7 +32,7 @@ namespace csci7551_project
   public:
     P_Smock(double w, double t, double c): edgeWeight(w), freeFlowTravelTime(t), steadyStateCapacity(c) 
     {
-      flowVPH = 0; 
+      flowVPH = 0;
       // std::cout << "New EdgeProperty\n" 
       //      << "Distance: " << edgeWeight << "\n"
       //      << "Free flow travel time: " << freeFlowTravelTime << "\n"
