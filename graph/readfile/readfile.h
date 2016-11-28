@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "../DAGSmock.h"
+#include "../RoadNetwork.h"
 
 // ƒ read_file,p,r)
 //
@@ -13,7 +13,7 @@
 
 namespace csci7551_project
 {
-  void readfile(const char*, DAGSmock&);
+  void readfile(const char*, RoadNetwork&);
   void parseNode (std::string, int&, int&, std::string&);
   void parseEdge (std::string, std::string&, std::string&, double&, double&);
 }

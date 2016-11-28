@@ -15,11 +15,11 @@
 #include <iostream>
 #include <exception>
 
-#include "../DAGSmock.h"
+#include "../RoadNetwork.h"
 
 namespace csci7551_project
 {
-    void readfile(const char* fileName, DAGSmock& G)
+    void readfile(const char* fileName, RoadNetwork& G)
     {
         std::vector<int> result;
         std::ifstream file;
