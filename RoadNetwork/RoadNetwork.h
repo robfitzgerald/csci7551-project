@@ -19,7 +19,13 @@ namespace csci7551_project
       CostFunctionFactory costFunctionFactory(alpha, beta);
       this->costFunction = costFunctionFactory(c);
     }
-    void addIntersection (int,int,std::string);
+    ~RoadNetwork()
+    {
+      V.erase(V.begin(), V.end());
+      E.erase(E.begin(), E.end());
+      delete costFunction;
+    }    
+    void addIntersection (double,double,std::string);
     void addRoadway (std::string,std::string,double,double);
     std::string toString();
   private:

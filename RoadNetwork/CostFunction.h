@@ -12,6 +12,7 @@ namespace csci7551_project
   {
   public:
     virtual double cost(double flow, double travelTime, double capacity) = 0;
+    // virtual ~CostFunction() = 0;
   };
 
   class Smock : public CostFunction
@@ -21,6 +22,7 @@ namespace csci7551_project
     {
       return travelTime * exp(flow / capacity);
     }
+    // ~Smock() {}
   };
 
   class Overgaard : public CostFunction

@@ -49,6 +49,10 @@ namespace csci7551_project
     {
       int myId = assignID();
     }
+    ~Vertex()
+    {
+      delete props;
+    }
     inline int getID () const { return id; }
     inline VertexProperty* getProps() { return props; }
     Edge* connect(Vertex*);

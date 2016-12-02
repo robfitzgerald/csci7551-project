@@ -48,7 +48,7 @@ namespace csci7551_project
                 }
                 else if (nodesSection)
                 {
-                    int x, y;
+                    double x, y;
                     std::string name;
                     parseNode(line,x,y,name);
                     G.addIntersection(x,y,name);
@@ -65,7 +65,7 @@ namespace csci7551_project
         }
     }
 
-    void parseNode (std::string line, int& x, int& y, std::string& name)
+    void parseNode (std::string line, double& x, double& y, std::string& name)
     {
         std::stringstream stream(line);
         try

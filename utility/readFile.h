@@ -14,7 +14,7 @@
 namespace csci7551_project
 {
   void readfile(const char*, RoadNetwork&);
-  void parseNode (std::string, int&, int&, std::string&);
+  void parseNode (std::string, double&, double&, std::string&);
   void parseEdge (std::string, std::string&, std::string&, double&, double&);
 }
 

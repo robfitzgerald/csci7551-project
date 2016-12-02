@@ -16,7 +16,7 @@ namespace csci7551_project
   typedef std::map<std::string,Intersection*>::iterator IntersectionIterator; 
   typedef std::vector<Roadway*>::iterator RoadwayIterator;
 
-  void RoadNetwork::addIntersection (int x, int y, std::string n)
+  void RoadNetwork::addIntersection (double x, double y, std::string n)
   {
     Intersection* v = new Intersection(new IntersectionProperty(x,y,n));
     this->V.insert(std::pair<std::string,Intersection*>(n,v));

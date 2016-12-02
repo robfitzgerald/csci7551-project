@@ -10,17 +10,17 @@ namespace csci7551_project
   class IntersectionProperty : public VertexProperty 
   {
   public:
-    IntersectionProperty(int lon, int lat): 
+    IntersectionProperty(double lon, double lat): 
       VertexProperty(), 
       x(lon), 
       y(lat) {}
-    IntersectionProperty(int lon, int lat, std::string n): 
+    IntersectionProperty(double lon, double lat, std::string n): 
       VertexProperty(), 
       x(lon), 
       y(lat), 
       name(n) {}
-    inline int getX() { return x; }
-    inline int getY() { return y; }
+    inline double getX() { return x; }
+    inline double getY() { return y; }
     inline std::string getName() { return name; }
   private:
     int x, y;
