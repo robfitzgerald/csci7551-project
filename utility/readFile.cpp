@@ -15,7 +15,7 @@
 #include <iostream>
 #include <exception>
 
-#include "../RoadNetwork.h"
+#include "../RoadNetwork/RoadNetwork.h"
 
 namespace csci7551_project
 {

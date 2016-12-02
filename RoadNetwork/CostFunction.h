@@ -5,6 +5,9 @@
 
 namespace csci7551_project
 {
+
+  enum COST_FUNCTION { NONE, SMOCK, OVERGAARD, BPL };
+
   class CostFunction
   {
   public:
@@ -50,8 +53,6 @@ namespace csci7551_project
   private:
     double alpha, beta;
   };
-
-  enum COST_FUNCTION { NONE, SMOCK, OVERGAARD, BPL };
 
   class CostFunctionFactory
   {

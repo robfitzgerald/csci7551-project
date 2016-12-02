@@ -1,8 +1,7 @@
-#ifndef CSCI7551_PROJECT_GRAPH_ROADWAY_H_
-#define CSCI7551_PROJECT_GRAPH_ROADWAY_H_
+#ifndef _CSCI7551_PROJECT_ROADWAY_H_
+#define _CSCI7551_PROJECT_ROADWAY_H_
 
-#include "Edge.h"
-#include "Vertex.h"
+#include "Graph.h"
 #include "CostFunction.h"
 
 namespace csci7551_project
@@ -28,7 +27,7 @@ namespace csci7551_project
     inline double cost()
     { 
       return costFunction->cost(edgeFlow, freeFlowTravelTime, steadyStateCapacity); 
-    } 
+    }
     inline double weight() { return distance; }
   private:
     double distance, edgeFlow, freeFlowTravelTime, steadyStateCapacity;
