@@ -1,3 +1,5 @@
+! source-nodes A
+! destination-nodes B E G O
 ! nodes
 # longitude latitude name
 0 0 A

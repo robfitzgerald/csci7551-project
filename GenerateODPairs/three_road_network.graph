@@ -1,0 +1,26 @@
+! source-nodes A
+! destination-nodes B E G O
+! nodes
+# longitude latitude name
+0 0 A
+0 5 B
+0 10 O
+-5 5 D
+-5 0 E
+5 0 F
+10 5 G
+! edges
+# sourceVertex destinationVertex freeFlowTravelTime steadyStateCapacity
+# weight is calculated from coordinate distance
+#
+# 2 links, longest time and smallest capacity
+A B 40 5
+B O 40 5
+# 3 links, medium time and capacity
+A D 20 10
+D E 20 10
+E O 20 10
+# 3 links, short time and largest capacity
+F G 10 20
+G O 10 20
+A F 10 20

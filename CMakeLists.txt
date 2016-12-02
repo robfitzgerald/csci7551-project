@@ -1,0 +1,8 @@
+cmake_minimum_required (VERSION 2.6)
+project (RoadNetworkApp)
+add_executable(RoadNetworkApp 
+  RoadNetwork/Graph.cpp
+  RoadNetwork/Intersection.cpp
+  RoadNetwork/RoadNetwork.cpp
+  utility/readFile.cpp
+  readFile.test.cpp)

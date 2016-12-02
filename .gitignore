@@ -1,2 +1,8 @@
 .DS_Store
 a.out
+GenerateODPairs$*
+CMakeFiles
+backup
+RoadNetworkApp
+CMakeCache.txt
+Makefile
