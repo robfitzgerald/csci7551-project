@@ -13,6 +13,10 @@ namespace csci7551_project
   public:
     Intersection(IntersectionProperty* v): Vertex(v) {}
     Roadway* connect(Intersection*, CostFunction*);
+    inline IntersectionProperty* getIntersectionProperties()
+    {
+      return (IntersectionProperty*) this->getProps();
+    }
   };
 }
 

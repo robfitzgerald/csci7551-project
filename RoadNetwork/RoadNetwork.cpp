@@ -39,7 +39,64 @@ namespace csci7551_project
     }
   }
 
-  std::string RoadNetwork::toString()
+  Intersection* RoadNetwork::getIntersection(std::string name)
+  {
+    IntersectionIterator i = V.find(name);
+    if (i == V.end())
+      std::cerr << "!unable to find intersection [" << name << "]" << std::endl; 
+    else 
+      return i->second;
+  }
+
+  // invariant: odpairs have been "found" aka for each o/d name we have found it's Intersection*
+  void RoadNetwork::runAllShortestPaths (std::vector<ODPair> odPairs)
+  {
+    int i;
+    std::vector<Path> paths;
+    std::vector<unsigned> topDistances(odPairs.size() * 2, 0);
+    // do i need to share(V,E)? or, since the OD pairs are pointers to intersections, can
+    // i find the other intersections they are connected to?
+    #pragma omp parallel shared(odPairs,topDistances) private(i)
+    {
+      #pragma omp for schedule(static)
+      for (i = 0; i < odPairs.size() * 2; ++i)
+      {
+        Path result = shortestPath(odPairs[i/2], topDistances, i);
+        if (isLocalMaster(i))
+        {
+          #pragma omp critical
+          paths.push_back(result);
+        }
+      }
+    }
+
+    for (int j = 0; j < paths.size(); ++j)
+    {
+      std::string startName = paths[j].start->getIntersectionProperties()->getName();
+      std::string endName = paths[j].end->getIntersectionProperties()->getName();
+      std::cout << "start: " << startName << ", end: " << endName << ", flow: " << paths[j].flow << ", top values: " << topDistances[j*2] << ", " << topDistances[(j*2)+1] << std::endl;
+    }
+  }
+
+  Path RoadNetwork::shortestPath (ODPair od, std::vector<unsigned> &top, int jobID)
+  {
+    Path shortestPath(od.origin, od.destination, od.flow);
+    bool stoppingConditionNotMet = true;
+    if (isLocalMaster(jobID))
+    {
+      // do forward search
+      shortestPath.flow += 1000;
+      top[jobID] = shortestPath.flow;
+    } else 
+    {
+      // do backward search
+      shortestPath.flow += 0; 
+      top[jobID] = shortestPath.flow;
+    }
+    return shortestPath;
+  }
+
+  std::string RoadNetwork::toString ()
   {
     std::stringstream output;
     output << "----- Graph State -----\n";
@@ -68,5 +125,11 @@ namespace csci7551_project
     double x = destination->getX() - source->getX();
     double y = destination->getY() - source->getY();
     return sqrt(x*x + y*y);
+  }
+
+  // even numbered pid's will be master to their odd-numbered counterparts pid+1
+  bool isLocalMaster (int pid)
+  {
+    return (pid % 2) == 0;
   }
 }

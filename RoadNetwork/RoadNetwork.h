@@ -11,6 +11,25 @@
 
 namespace csci7551_project
 {
+  struct Path 
+  {
+  public:
+    Path(Intersection* s, Intersection* e, unsigned f): start(s), end(e), flow(f) {}
+    ~Path(){}
+    Intersection *start, *end;
+    unsigned flow;
+  private:
+    std::vector<Roadway*> E;
+  };
+
+  struct ODPair 
+  {
+    ODPair(Intersection *o, Intersection *d, unsigned f): origin(o), destination(d), flow(f) {}
+    ~ODPair(){}
+    Intersection *origin, *destination;
+    unsigned flow;
+  };
+
   class RoadNetwork
   {
   public:
@@ -24,17 +43,21 @@ namespace csci7551_project
       V.erase(V.begin(), V.end());
       E.erase(E.begin(), E.end());
       delete costFunction;
-    }    
+    }
     void addIntersection (double,double,std::string);
-    void addRoadway (std::string,std::string,double,double);
+    void addRoadway (std::string,std::string,double,double); 
+    Intersection* getIntersection(std::string);
+    void runAllShortestPaths(std::vector<ODPair>);
     std::string toString();
   private:
+    Path shortestPath (ODPair, std::vector<unsigned>&, int);
     std::map<std::string,Intersection*> V;
     std::vector<Roadway*> E;
     CostFunction* costFunction;
   };
 
   double cartesianDistance (Intersection*,Intersection*);
+  bool isLocalMaster (int);
 }
 
 #endif
