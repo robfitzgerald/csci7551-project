@@ -8,6 +8,7 @@
 
 namespace csci7551_project
 {
+  class Roadway;
   class Intersection : public Vertex
   {
   public:
@@ -17,6 +18,9 @@ namespace csci7551_project
     {
       return (IntersectionProperty*) this->getProps();
     }
+    std::vector<Roadway*> getInRoads();
+    std::vector<Roadway*> getOutRoads();
+    std::vector<std::pair<Intersection*, double> > getNeighbors();
   };
 }
 

@@ -18,8 +18,7 @@ namespace csci7551_project
     ~Path(){}
     Intersection *start, *end;
     unsigned flow;
-  private:
-    std::vector<Roadway*> E;
+    std::vector<Roadway*> route;
   };
 
   struct ODPair 
@@ -45,19 +44,21 @@ namespace csci7551_project
       delete costFunction;
     }
     void addIntersection (double,double,std::string);
-    void addRoadway (std::string,std::string,double,double); 
+    void addRoadway (std::string,std::string,double,double);
     Intersection* getIntersection(std::string);
     void runAllShortestPaths(std::vector<ODPair>);
     std::string toString();
   private:
-    Path shortestPath (ODPair, std::vector<unsigned>&, int);
+    Path shortestPath (ODPair, double, std::vector<double>&, int, bool);
+    bool stoppingTest (double, const std::vector<double>&, int, bool);
     std::map<std::string,Intersection*> V;
     std::vector<Roadway*> E;
     CostFunction* costFunction;
   };
 
-  double cartesianDistance (Intersection*,Intersection*);
+  double euclidianDistance (Intersection*,Intersection*);
   bool isLocalMaster (int);
+  void printTree (Intersection*, int);
 }
 
 #endif

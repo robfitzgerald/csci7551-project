@@ -2,16 +2,22 @@
 #define _CSCI7551_PROJECT_ROADWAY_H_
 
 #include "Graph.h"
+#include "Intersection.h"
 #include "CostFunction.h"
 
 namespace csci7551_project
 {
+  class Intersection;
   class Roadway : public Edge
   {
   public:
     Roadway(Vertex* s, Vertex* d, CostFunction* c):  
       Edge(s,d),
       costFunction(c) {}
+ 
+    inline Intersection* getSourceIntersection () const { return (Intersection*) this->getSource(); }
+    inline Intersection* getDestinationIntersection () const { return (Intersection*) this->getDestination(); }
+
     inline double getDistance() { return distance; }
     inline double getFlow() { return edgeFlow; }
     inline double getFreeFlowTime() { return freeFlowTravelTime; }

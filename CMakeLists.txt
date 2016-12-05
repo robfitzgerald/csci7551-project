@@ -4,5 +4,6 @@ add_executable(RoadNetworkApp
   RoadNetwork/Graph.cpp
   RoadNetwork/Intersection.cpp
   RoadNetwork/RoadNetwork.cpp
+  RoadNetwork/ShortestPathTree.cpp
   utility/readFile.cpp
   omp.test.cpp)

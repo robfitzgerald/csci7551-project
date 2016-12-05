@@ -5,11 +5,14 @@
 #include <iostream>
 #include <cmath>
 
+// #include "omp.h"
+
 #include "RoadNetwork.h"
 #include "Graph.h"
 #include "IntersectionProperty.h"
 #include "Intersection.h"
 #include "Roadway.h"
+#include "ShortestPathTree.h"
 
 namespace csci7551_project
 {
@@ -34,7 +37,7 @@ namespace csci7551_project
       Intersection* source = sourceIterator->second;
       Intersection* destination = destinationIterator->second;
       Roadway* newEdge = (Roadway*) source->connect(destination, this->costFunction);
-      newEdge->setFreeFlowTime(t)->setCapacity(c)->setDistance(cartesianDistance(source, destination));
+      newEdge->setFreeFlowTime(t)->setCapacity(c)->setDistance(euclidianDistance(source, destination));
       E.push_back(newEdge);
     }
   }
@@ -42,8 +45,11 @@ namespace csci7551_project
   Intersection* RoadNetwork::getIntersection(std::string name)
   {
     IntersectionIterator i = V.find(name);
-    if (i == V.end())
+    if (i == V.end()) 
+    {
       std::cerr << "!unable to find intersection [" << name << "]" << std::endl; 
+      return 0;
+    }
     else 
       return i->second;
   }
@@ -52,16 +58,19 @@ namespace csci7551_project
   void RoadNetwork::runAllShortestPaths (std::vector<ODPair> odPairs)
   {
     int i;
+    bool stoppingConditionNotMet;
     std::vector<Path> paths;
-    std::vector<unsigned> topDistances(odPairs.size() * 2, 0);
-    // do i need to share(V,E)? or, since the OD pairs are pointers to intersections, can
-    // i find the other intersections they are connected to?
-    #pragma omp parallel shared(odPairs,topDistances) private(i)
+    std::vector<double> topDistances(odPairs.size() * 2, 0);
+    // std::vector<ShortestPathTree> trees(odPairs.size() * 2);
+    #pragma omp parallel shared(odPairs,topDistances/*,trees*/) private(i,stoppingConditionNotMet)
     {
       #pragma omp for schedule(static)
       for (i = 0; i < odPairs.size() * 2; ++i)
       {
-        Path result = shortestPath(odPairs[i/2], topDistances, i);
+        Intersection* thisSource = odPairs[i/2].origin;
+        Intersection* thisDestination = odPairs[i/2].destination;
+        double distance = euclidianDistance(thisSource,thisDestination);
+        Path result = shortestPath(odPairs[i/2], distance, topDistances, i, stoppingConditionNotMet);
         if (isLocalMaster(i))
         {
           #pragma omp critical
@@ -70,30 +79,43 @@ namespace csci7551_project
       }
     }
 
-    for (int j = 0; j < paths.size(); ++j)
-    {
-      std::string startName = paths[j].start->getIntersectionProperties()->getName();
-      std::string endName = paths[j].end->getIntersectionProperties()->getName();
-      std::cout << "start: " << startName << ", end: " << endName << ", flow: " << paths[j].flow << ", top values: " << topDistances[j*2] << ", " << topDistances[(j*2)+1] << std::endl;
-    }
+    // for (int j = 0; j < paths.size(); ++j)
+    // {
+    //   std::string startName = paths[j].start->getIntersectionProperties()->getName();
+    //   std::string endName = paths[j].end->getIntersectionProperties()->getName();
+    //   std::cout << "start: " << startName << ", end: " << endName << ", flow: " << paths[j].flow << ", top values: " << topDistances[j*2] << ", " << topDistances[(j*2)+1] << std::endl;
+    // }
   }
 
-  Path RoadNetwork::shortestPath (ODPair od, std::vector<unsigned> &top, int jobID)
+  Path RoadNetwork::shortestPath (ODPair od, double dist, std::vector<double> &top, int jobID, bool stoppingConditionNotMet)
   {
-    Path shortestPath(od.origin, od.destination, od.flow);
-    bool stoppingConditionNotMet = true;
-    if (isLocalMaster(jobID))
+    Path result(od.origin, od.destination, od.flow);
+    while (stoppingConditionNotMet)
     {
-      // do forward search
-      shortestPath.flow += 1000;
-      top[jobID] = shortestPath.flow;
-    } else 
-    {
-      // do backward search
-      shortestPath.flow += 0; 
-      top[jobID] = shortestPath.flow;
+      if (isLocalMaster(jobID))
+      {
+        // do forward search
+        result.flow += 1000;
+        printTree(od.origin,0);
+        top[jobID] = result.flow;
+      } else 
+      {
+        // do backward search
+        result.flow += 0; 
+        top[jobID] = result.flow;
+      }
+      bool unexplored = true;
+      #pragma omp critical
+      if (stoppingTest(dist, top, jobID, unexplored))
+      {
+        // wrap it up buddy. merge, put a bow on it.
+        
+        
+        stoppingConditionNotMet = false;
+      }
     }
-    return shortestPath;
+    
+    return result;
   }
 
   std::string RoadNetwork::toString ()
@@ -118,7 +140,7 @@ namespace csci7551_project
     return output.str();
   }
 
-  double cartesianDistance (Intersection* s, Intersection* d)
+  double euclidianDistance (Intersection* s, Intersection* d)
   {
     IntersectionProperty* source = (IntersectionProperty*) s->getProps();
     IntersectionProperty* destination = (IntersectionProperty*) d->getProps();
@@ -132,4 +154,35 @@ namespace csci7551_project
   {
     return (pid % 2) == 0;
   }
+
+  // should not 
+  bool RoadNetwork::stoppingTest (double dist, const std::vector<double> &top, int jobID, bool unexploredIntersections)
+  {
+    if (unexploredIntersections == false)
+      return true;
+    int otherID;
+    if (isLocalMaster(jobID))
+      otherID = jobID + 1;
+    else
+      otherID = jobID - 1;
+    return (top[jobID] + top[otherID]) > dist;
+  }
+
+  void printTree (Intersection* s, int depth)
+  {
+    IntersectionProperty* prop = s->getIntersectionProperties();
+    std::string output = "";
+    for (int j = 0; j < depth; ++j)
+        output += " ";
+    output += prop->getName();
+    std::cout << output << std::endl;
+
+    std::vector<Roadway*> outflows = s->getOutRoads();
+    for (int i = 0; i < outflows.size(); ++i)
+    {
+      Intersection* dest = outflows[i]->getDestinationIntersection();
+      printTree(dest, depth+1);
+    }
+  }
+
 }
