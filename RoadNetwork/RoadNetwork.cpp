@@ -58,11 +58,11 @@ namespace csci7551_project
   void RoadNetwork::runAllShortestPaths (std::vector<ODPair> odPairs)
   {
     int i;
-    bool stoppingConditionNotMet;
+    bool stoppingConditionNotMet = true;
     std::vector<Path> paths;
     std::vector<double> topDistances(odPairs.size() * 2, 0);
     // std::vector<ShortestPathTree> trees(odPairs.size() * 2);
-    #pragma omp parallel shared(odPairs,topDistances/*,trees*/) private(i,stoppingConditionNotMet)
+    #pragma omp parallel shared(odPairs,topDistances) firstprivate(stoppingConditionNotMet) private(i)
     {
       #pragma omp for schedule(static)
       for (i = 0; i < odPairs.size() * 2; ++i)
@@ -105,12 +105,12 @@ namespace csci7551_project
         top[jobID] = result.flow;
       }
       bool unexplored = true;
+      stoppingConditionNotMet = false;
       #pragma omp critical
       if (stoppingTest(dist, top, jobID, unexplored))
       {
         // wrap it up buddy. merge, put a bow on it.
-        
-        
+          
         stoppingConditionNotMet = false;
       }
     }

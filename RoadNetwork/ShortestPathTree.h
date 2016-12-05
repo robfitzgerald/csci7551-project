@@ -14,13 +14,11 @@ namespace csci7551_project
   class SPTNode
   {
   public:
-    SPTNode(NodeCostTuple n): pathDistance(n.second), node(n.first), explored(false) {}
+    SPTNode(NodeCostTuple n): distance(n.second), node(n.first), explored(false) {}
     ~SPTNode(){}
     inline bool operator < (const SPTNode& r) const
     {
-      // used to create a minimum cost tree; operator < will be called
-      // by the priority_queue, which is designed to create a max-cost queue
-      return this->pathDistance > r.pathDistance;
+      return this->pathDistance < r.pathDistance;
     }
     double distance, pathDistance;
     Intersection* node;
@@ -34,7 +32,6 @@ namespace csci7551_project
     {
       NodeCostTuple source(s,0);
       SPTNode n(source);
-      n.explored = true;
       frontier.push(n);
       std::vector<NodeCostTuple> neighbors = s->getNeighbors();
       for (int i = 0; i < neighbors.size(); ++i)
