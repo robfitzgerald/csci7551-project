@@ -35,7 +35,7 @@ namespace csci7551_project
     return result;
   }  
 
-  std::vector<std::pair<Intersection*, double> > Intersection::getNeighbors()
+  std::vector<std::pair<Intersection*, double> > Intersection::getForwardNeighbors()
   {
     std::vector<Edge*> flows = this->getOutflows();
     std::vector<std::pair<Intersection*, double> > result;
@@ -48,4 +48,20 @@ namespace csci7551_project
     } 
     return result;
   }
+
+  std::vector<std::pair<Intersection*, double> > Intersection::getReverseNeighbors()
+  {
+    std::vector<Edge*> flows = this->getInflows();
+    std::vector<std::pair<Intersection*, double> > result;
+    for (int i = 0; i < flows.size(); ++i)
+    {
+      Intersection* d = ((Roadway*) flows[i])->getSourceIntersection();
+      double c = ((Roadway*) flows[i])->cost();
+      std::pair<Intersection*, double> neighbor(d,c);
+      result.push_back(neighbor);
+    } 
+    return result;
+  }  
 }
+
+

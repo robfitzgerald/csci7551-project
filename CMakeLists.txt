@@ -6,4 +6,4 @@ add_executable(RoadNetworkApp
   RoadNetwork/RoadNetwork.cpp
   RoadNetwork/BidirectionalAStar.cpp
   utility/readFile.cpp
-  omp.test.cpp)
+  msaSim.test.cpp)

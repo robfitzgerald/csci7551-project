@@ -23,10 +23,14 @@ namespace csci7551_project
     if (parentIterator != selected.end())
     {
       AStarNode* parent = parentIterator->second;
-      NeighborVector neighbors = i->node->getNeighbors();
+      NeighborVector* neighbors;
+      if (direction == FORWARD)
+        neighbors = i->node->getForwardNeighbors();
+      else if (direction == BACKWARD)
+        neighbors = i->node->getReverseNeighbors();
 
       // for each neighbor of each selected node
-      for (NeighborIterator j = neighbors.begin(); j != neighbors.end(); ++j)
+      for (NeighborIterator j = neighbors->begin(); j != neighbors->end(); ++j)
       {
         AStarMapIterator frontierIterator = frontier.find(j->first);
         AStarMapIterator selectedIterator = selected.find(j->first);
@@ -101,18 +105,43 @@ namespace csci7551_project
       return false;
   }
 
-
-  bool stoppingTest (std::list<Intersection*>& left, std::list<Intersection*>& right)
+  std::list<Roadway*> mergeBidirectionalPaths(search[jobID+1] reverseSearch, Intersection* meetingPoint)
   {
-    for (IntersectionIterator i = left.begin(); i != left.end(); ++i)
+    std::list<Roadway*> output;
+    std::list<Intersection*> leftPath = this->getAStarNodeFromIntersection(meetingPoint)->getPath();
+    std::list<Intersection*> rightPath = reverseSearch->getAStarNodeFromIntersection(meetingPoint)->getPath();
+    for (int i = 0; i < leftPath.size(); ++i)
     {
-      for (IntersectionIterator j = right.begin(); j != right.end(); ++j)
+      // find all the edges between successive values
+      std::vector<Roadway*> outRoads = leftPath[i]->getOutRoads()
+      for (std::vector<Roadway*>::iterator j = outRoads.begin(); j != outRoads.end(); ++j)
       {
-        if (i == j)
-          return true;
+        if (outRoads[j]->getDestinationIntersection() == leftPath[i+1])
+        {
+          output.push_back(outRoads[j]);
+          j = outRoads.end();
+        }
       }
     }
-    return false;
+    for (int i = rightPath.size()-1; i >= 0; --i)
+    {
+      // find all the edges between successive values
+      std::vector<Roadway*> inRoads = leftPath[i]->getInRoads()
+      for (std::vector<Roadway*>::iterator j = inRoads.begin(); j != inRoads.end(); ++j)
+      {
+        if (inRoads[j]->getSourceIntersection() == leftPath[i-1])
+        {
+          output.push_back(inRoads[j]);
+          j = inRoads.end();
+        }
+      }
+    }
+    return output;
+  }
+
+  AStarNode* BidirectionalAStar::getAStarNodeFromIntersection (Intersection* target)
+  {
+    return selected.find(meetingPoint);
   }
 
   // at the end, best picks will be in leftIntersections[0] and rightIntersections[0]
@@ -159,38 +188,4 @@ namespace csci7551_project
     double y = l.second - r.second;
     return sqrt(x*x + y*y);
   }
-
-    // for (std::pair<DistancesIterator,CoordinatesIterator> i(leftDistances.begin(),leftCoordinates.begin());
-    //   i.first != leftDistances.end();
-    //   ++i.first, ++i.second)
-    // {
-      
-    // }
-
-  // Intersection* ShortestPathTree::minCostUnexplored()
-  // { 
-  //   return true;
-  // }
-
-  // void ShortestPathTree::relax()
-  // {
-
-  // }
-
-  // void ShortestPathTree::explore()
-  // {
-  //   SPTNode top = frontier.top();
-  //   double dist = top.pathDistance;
-  //   frontier.pop(); // before you add to frontier
-  //   std::vector<NodeCostTuple> neighbors = top.node->getNeighbors();
-    
-  // }
-  
-  // std::vector<NodeCostTuple> neighbors = s->getNeighbors();
-  // for (int i = 0; i < neighbors.size(); ++i)
-  // {
-  //   AStarNode t (neighbors[i]);
-  //   frontier.push(t);
-  // }
-
 }

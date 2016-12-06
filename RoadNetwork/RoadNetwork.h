@@ -138,6 +138,7 @@ namespace csci7551_project
   bool isLocalMaster (int);
   void printTree (Intersection*, int);
   A_STAR_DIRECTION pickSearchDirection (int);
+
 }
 
 #endif

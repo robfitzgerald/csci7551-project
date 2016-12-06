@@ -71,14 +71,19 @@ namespace csci7551_project
       std::vector<double> allOrNothingFlows, allOrNothingCosts;
       calculateNetworkFlows(allOrNothingFlows);
       calculateNetworkFlowCosts(allOrNothingCosts);
+      // @TODO: 
+      // #pragma omp parallel shared() private()
+      // {
+      // #pragma for schedule(static)
       for (int j = 0; j < E.size(); ++i)
       {
         flows[j] = calculateCurrentFlow(phi, E[j]->getFlow(), flows[j]);
       }
+      // }
     }
   }
 
-  // @TODO: objective function Z ..
+  // @TODO: figure out objective function Z ..
   void RoadNetwork::assignFrankWolfe (std::vector<ODPair>* odPairs) {}
 
   double RoadNetwork::calculateCurrentFlow (double phi, double AONflow, double previousFlow)
@@ -136,13 +141,12 @@ namespace csci7551_project
   void RoadNetwork::runAllShortestPaths (std::vector<ODPair>* odPairs, std::vector<Path>* paths)
   {
     int i;
-    bool stoppingConditionNotMet = true;
+    std::vector<bool> stoppingConditionNotMet(odPairs->size() * 2, true);
     std::vector<std::list<Intersection*> > intersections(odPairs->size() * 2, 0);
     std::vector<std::list<std::pair<double,double> > > coordinates(odPairs->size() * 2, 0);
     std::vector<std::list<double> > distances(odPairs->size() * 2, 0);
-    BidirectionalAStar* search;
-    // std::vector<ShortestPathTree> trees(odPairs->size() * 2);
-    #pragma omp parallel shared(odPairs,intersections,coordinates,distances) firstprivate(stoppingConditionNotMet) private(i,search)
+    std::vector<BidirectionalAStar*> search(odPairs->size() * 2, 0);
+    #pragma omp parallel shared(odPairs,intersections,coordinates,distances,search) firstprivate(stoppingConditionNotMet) private(i)
     {
       #pragma omp for schedule(static)
       for (i = 0; i < odPairs->size() * 2; ++i)
@@ -150,9 +154,9 @@ namespace csci7551_project
         Intersection* thisSource = (*odPairs)[i/2].origin;
         Intersection* thisDestination = (*odPairs)[i/2].destination;
         if ((i % 2) == 0)
-          search = new BidirectionalAStar(thisSource, FORWARD);
+          search[i] = new BidirectionalAStar(thisSource, FORWARD);
         else
-          search = new BidirectionalAStar(thisDestination, BACKWARD);
+          search[i] = new BidirectionalAStar(thisDestination, BACKWARD);
         double distance = euclidianDistance(thisSource,thisDestination);
         Path* result = shortestPath((*odPairs)[i/2], distance, intersections, coordinates, distances, search, i, stoppingConditionNotMet);
         #pragma omp critical
@@ -160,7 +164,7 @@ namespace csci7551_project
         {
           paths->push_back(result);
         }
-        delete search;
+        search.erase(&search[i]);
       }
     }
 
@@ -172,39 +176,49 @@ namespace csci7551_project
     // }
   }
 
-  Path* RoadNetwork::shortestPath (ODPair od, double dist, std::vector<std::list<Intersection*> > &intersections, std::vector<std::list<std::pair<double,double> > > coordinates, std::vector<std::list<double> > distances, BidirectionalAStar* search, int jobID, bool stoppingConditionNotMet)
+  Path* RoadNetwork::shortestPath (ODPair od, double dist, std::vector<std::list<Intersection*> > &intersections, std::vector<std::list<std::pair<double,double> > > coordinates, std::vector<std::list<double> > distances, std::vector<BidirectionalAStar*> search, int jobID, bool stoppingConditionNotMet)
   {
     Path* result = new Path(od.origin, od.destination, od.flow);
-    while (stoppingConditionNotMet)
+    while (stoppingConditionNotMet[jobID])
     {
-      search->updateFrontier();
-      search->loadCompareList(intersections[jobID],coordinates[jobID],distances[jobID]);
+      search[jobID]->updateFrontier();
+      search[jobID]->loadCompareList(intersections[jobID],coordinates[jobID],distances[jobID]);
 
       #pragma omp critical
       if (isLocalMaster(jobID))
       {
+        // 
         if (stoppingTest(intersections[jobID],intersections[jobID+1]))
         {
-          clearLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]);
-          stoppingConditionNotMet = false;
-        }
-        else
-        {
-          compareLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]);         
-          // intersection lists should have the resulting pick at index [0]
+          // if stoppingTest was true, it also had the side effect of removing all
+          // intersections except the ones that match (since finding those is part
+          // of how the stopping test occurs, that O(n^2) operation should only
+          // happen once)
+          stoppingConditionNotMet[jobID] = false;
+          stoppingConditionNotMet[jobID+1] = false;
         }
       }
       #pragma omp critical
-      if (stoppingConditionNotMet)
+      if (stoppingConditionNotMet[jobID])
       {
-        search.moveToSelected(intersections[jobID][0]);
+        // continue search [master,slave]
+        compareLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]);
+        search[jobID]->moveToSelected(intersections[jobID][0]);
         intersections.clear();
       }
-      #pragma omp critical
-      if (!stoppingConditionNotMet)
+      else if (isLocalMaster(jobID))
       {
-        // wrap it up buddy. merge, put a bow on it.
-        // some kind of merge function here that results in that path                
+        // end search [master]
+        // merge paths found
+        // intersections has our intersection where they met
+        // attach the two paths from search
+        result.route = search[jobID]->mergeBidirectionalPaths(search[jobID+1], Intersection*);
+        clearLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]);
+      }
+      else
+      {
+        // end search [slave]
+        // no action here
       }
     }
     
@@ -228,7 +242,7 @@ namespace csci7551_project
       Roadway* e = *i;
       IntersectionProperty* sProps = (IntersectionProperty*) e->getSource()->getProps();
       IntersectionProperty* dProps = (IntersectionProperty*) e->getDestination()->getProps();
-      output << "(" << sProps->getName() << ")-->(" << dProps->getName() << ") distance: " << e->weight() << ", cost (V=200): " << e->setFlow(200)->cost() << std::endl;
+      output << "(" << sProps->getName() << ")-->(" << dProps->getName() << ") distance: " << e->weight() << ", cost: " << e->->cost() << std::endl;
     }
     return output.str();
   }
@@ -248,18 +262,33 @@ namespace csci7551_project
     return (pid % 2) == 0;
   }
 
-  // should not 
-  // bool RoadNetwork::stoppingTest (double dist, const std::vector<double> &top, int jobID, bool unexploredIntersections)
-  // {
-  //   if (unexploredIntersections == false)
-  //     return true;
-  //   int otherID;
-  //   if (isLocalMaster(jobID))
-  //     otherID = jobID + 1;
-  //   else
-  //     otherID = jobID - 1;
-  //   return (top[jobID] + top[otherID]) > dist;
-  // }
+  bool RoadNetwork::stoppingTest (std::list<Intersection*>& a, std::list<Intersection*>& b)
+  {
+    bool matchFound = false;
+    Intersection* aMatch, bMatch;
+    for (std::list<Intersection*>::iterator i = a->begin(); i != a->end(); ++i)
+    {
+      for (std::list<Intersection*>::iterator j = a->begin(); j != a->end(); ++j)
+      {
+        if (i==j)
+        {
+          aMatch = i;
+          bMatch = j;
+          matchFound = true;
+        }
+      }
+    }
+    if (matchFound)
+    {
+      a.clear();
+      b.clear();
+      a.push_back(aMatch);
+      b.push_back(bMatch);
+      return true;
+    }
+    else
+      return false;
+  }
 
   void printTree (Intersection* s, int depth)
   {

@@ -39,6 +39,7 @@ namespace csci7551_project
     ~AStarNode() { path.clear(); }
 
     inline std::list<Intersection*> getPath () { return path; }
+    inline void setPath (Intersection* i) { path.push_back(i); }
     inline void setPath (std::list<Intersection*> p) { path = p; }
     inline void setPathAndAppend (std::list<Intersection*> p, Intersection* v) 
     { 
@@ -79,6 +80,7 @@ namespace csci7551_project
     {
       NodeCostTuple source(s,0);
       AStarNode* n = new AStarNode(source);
+      n.setPath(s);
       selected.insert(std::pair<Intersection*,AStarNode*>(s,n));
     }
     ~BidirectionalAStar ()
@@ -94,22 +96,12 @@ namespace csci7551_project
       selected.clear();
       frontier.clear();
     }
-    inline double getTopDistance () { return topDistance; }
-    inline bool setTopDistance (double d) 
-    { 
-      if (d > topDistance)
-      {
-        topDistance = d;
-        return true;
-      }
-      else
-        return false;
-    }
     void updateFrontier ();
-    // loads the current frontier set into shared memory
     void loadCompareList (std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&);
     bool moveToSelected (Intersection*);
     const AStarMapIterator getSelectedIterator () { return selected.begin(); }
+    std::list<Roadway*> mergeBidirectionalPaths(BidirectionalAStar*, Intersection*);
+    AStarNode* getAStarNodeFromIntersection (Intersection*);
   private:
     std::list<FrontierCost> frontierCosts ();
     A_STAR_DIRECTION direction;
@@ -118,7 +110,6 @@ namespace csci7551_project
     std::map<Intersection*, AStarNode*> frontier;
     std::map<Intersection*, AStarNode*> selected;
   };
-  bool stoppingTest (std::list<Intersection*>&, std::list<Intersection*>&);
   void compareLists (std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&, std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&);
   void clearLists (std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&, std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&);
   double heuristic (double,double,double,double,double,double);
