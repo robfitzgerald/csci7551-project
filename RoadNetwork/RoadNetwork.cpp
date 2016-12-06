@@ -2,6 +2,7 @@
 #include <sstream>
 #include <map>
 #include <vector>
+#include <list>
 #include <iostream>
 #include <cmath>
 
@@ -12,7 +13,7 @@
 #include "IntersectionProperty.h"
 #include "Intersection.h"
 #include "Roadway.h"
-#include "ShortestPathTree.h"
+#include "BidirectionalAStar.h"
 
 namespace csci7551_project
 {
@@ -60,22 +61,30 @@ namespace csci7551_project
     int i;
     bool stoppingConditionNotMet = true;
     std::vector<Path> paths;
-    std::vector<double> topDistances(odPairs.size() * 2, 0);
+    std::vector<std::list<Intersection*> > intersections(odPairs.size() * 2, 0);
+    std::vector<std::list<std::pair<double,double> > > coordinates(odPairs.size() * 2, 0);
+    std::vector<std::list<double> > distances(odPairs.size() * 2, 0);
+    BidirectionalAStar* search;
     // std::vector<ShortestPathTree> trees(odPairs.size() * 2);
-    #pragma omp parallel shared(odPairs,topDistances) firstprivate(stoppingConditionNotMet) private(i)
+    #pragma omp parallel shared(odPairs,intersections,coordinates,distances) firstprivate(stoppingConditionNotMet) private(i,search)
     {
       #pragma omp for schedule(static)
       for (i = 0; i < odPairs.size() * 2; ++i)
       {
         Intersection* thisSource = odPairs[i/2].origin;
         Intersection* thisDestination = odPairs[i/2].destination;
+        if ((i % 2) == 0)
+          search = new BidirectionalAStar(thisSource, FORWARD);
+        else
+          search = new BidirectionalAStar(thisDestination, BACKWARD);
         double distance = euclidianDistance(thisSource,thisDestination);
-        Path result = shortestPath(odPairs[i/2], distance, topDistances, i, stoppingConditionNotMet);
+        Path result = shortestPath(odPairs[i/2], distance, intersections, coordinates, distances, search, i, stoppingConditionNotMet);
+        #pragma omp critical
         if (isLocalMaster(i))
         {
-          #pragma omp critical
           paths.push_back(result);
         }
+        delete search;
       }
     }
 
@@ -87,31 +96,39 @@ namespace csci7551_project
     // }
   }
 
-  Path RoadNetwork::shortestPath (ODPair od, double dist, std::vector<double> &top, int jobID, bool stoppingConditionNotMet)
+  Path RoadNetwork::shortestPath (ODPair od, double dist, std::vector<std::list<Intersection*> > &intersections, std::vector<std::list<std::pair<double,double> > > coordinates, std::vector<std::list<double> > distances, BidirectionalAStar* search, int jobID, bool stoppingConditionNotMet)
   {
     Path result(od.origin, od.destination, od.flow);
     while (stoppingConditionNotMet)
     {
+      search->updateFrontier();
+      search->loadCompareList(intersections[jobID],coordinates[jobID],distances[jobID]);
+
+      #pragma omp critical
       if (isLocalMaster(jobID))
       {
-        // do forward search
-        result.flow += 1000;
-        printTree(od.origin,0);
-        top[jobID] = result.flow;
-      } else 
-      {
-        // do backward search
-        result.flow += 0; 
-        top[jobID] = result.flow;
+        if (stoppingTest(intersections[jobID],intersections[jobID+1]))
+        {
+          clearLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]);
+          stoppingConditionNotMet = false;
+        }
+        else
+        {
+          compareLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]);         
+          // intersection lists should have the resulting pick at index [0]
+        }
       }
-      bool unexplored = true;
-      stoppingConditionNotMet = false;
       #pragma omp critical
-      if (stoppingTest(dist, top, jobID, unexplored))
+      if (stoppingConditionNotMet)
+      {
+        search.moveToSelected(intersections[jobID][0]);
+        intersections.clear();
+      }
+      #pragma omp critical
+      if (!stoppingConditionNotMet)
       {
         // wrap it up buddy. merge, put a bow on it.
-          
-        stoppingConditionNotMet = false;
+        // some kind of merge function here that results in that path                
       }
     }
     
@@ -156,17 +173,17 @@ namespace csci7551_project
   }
 
   // should not 
-  bool RoadNetwork::stoppingTest (double dist, const std::vector<double> &top, int jobID, bool unexploredIntersections)
-  {
-    if (unexploredIntersections == false)
-      return true;
-    int otherID;
-    if (isLocalMaster(jobID))
-      otherID = jobID + 1;
-    else
-      otherID = jobID - 1;
-    return (top[jobID] + top[otherID]) > dist;
-  }
+  // bool RoadNetwork::stoppingTest (double dist, const std::vector<double> &top, int jobID, bool unexploredIntersections)
+  // {
+  //   if (unexploredIntersections == false)
+  //     return true;
+  //   int otherID;
+  //   if (isLocalMaster(jobID))
+  //     otherID = jobID + 1;
+  //   else
+  //     otherID = jobID - 1;
+  //   return (top[jobID] + top[otherID]) > dist;
+  // }
 
   void printTree (Intersection* s, int depth)
   {
@@ -183,6 +200,11 @@ namespace csci7551_project
       Intersection* dest = outflows[i]->getDestinationIntersection();
       printTree(dest, depth+1);
     }
+  }
+
+  A_STAR_DIRECTION pickSearchDirection (int id)
+  {
+    return ((id % 2) == 0) ? FORWARD : BACKWARD;
   }
 
 }

@@ -8,6 +8,7 @@
 #include "CostFunction.h"
 #include "Intersection.h"
 #include "Roadway.h"
+#include "BidirectionalAStar.h"
 
 namespace csci7551_project
 {
@@ -46,11 +47,11 @@ namespace csci7551_project
     void addIntersection (double,double,std::string);
     void addRoadway (std::string,std::string,double,double);
     Intersection* getIntersection(std::string);
-    
+
     void runAllShortestPaths(std::vector<ODPair>);
     std::string toString();
   private:
-    Path shortestPath (ODPair, double, std::vector<double>&, int, bool);
+    Path shortestPath (ODPair, double, std::vector<std::list<Intersection*> >&, std::vector<std::list<std::pair<double,double> > >, std::vector<std::list<double> >, BidirectionalAStar*, int, bool);
     bool stoppingTest (double, const std::vector<double>&, int, bool);
     std::map<std::string,Intersection*> V;
     std::vector<Roadway*> E;
@@ -60,6 +61,7 @@ namespace csci7551_project
   double euclidianDistance (Intersection*,Intersection*);
   bool isLocalMaster (int);
   void printTree (Intersection*, int);
+  A_STAR_DIRECTION pickSearchDirection (int);
 }
 
 #endif
