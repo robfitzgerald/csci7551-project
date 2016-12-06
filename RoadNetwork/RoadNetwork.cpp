@@ -55,34 +55,110 @@ namespace csci7551_project
       return i->second;
   }
 
+  void RoadNetwork::assignMSA(std::vector<ODPair>* odPairs)
+  {
+    resetFlows();
+    std::vector<double> flows (E.size(), 0);
+    std::vector<Roadway*> populatedRoadways;
+    calculateNetworkFlows(flows);  // step 0
+
+    for (int i = 1; i < simulationIterations; ++i)
+    {
+      double phi = 1.0 / i;
+      std::vector<Path>* paths = new std::vector<Path>();
+      runAllShortestPaths(odPairs, paths);  // omp enabled
+      loadAllOrNothing(paths);
+      std::vector<double> allOrNothingFlows, allOrNothingCosts;
+      calculateNetworkFlows(allOrNothingFlows);
+      calculateNetworkFlowCosts(allOrNothingCosts);
+      for (int j = 0; j < E.size(); ++i)
+      {
+        flows[j] = calculateCurrentFlow(phi, E[j]->getFlow(), flows[j]);
+      }
+    }
+  }
+
+  // @TODO: objective function Z ..
+  void RoadNetwork::assignFrankWolfe (std::vector<ODPair>* odPairs) {}
+
+  double RoadNetwork::calculateCurrentFlow (double phi, double AONflow, double previousFlow)
+  {
+    return ((1 - phi) * previousFlow) + (phi * AONflow);
+  }
+
+  void RoadNetwork::resetFlows ()
+  {
+    for (std::vector<Roadway*>::iterator i = E.begin(); i != E.end(); ++i)
+    {
+      i->setFlow(0);
+    }
+  }
+
+  void RoadNetwork::calculateNetworkFlows (std::vector<double>* flows)
+  {
+    for (int i = 0; i < E.size(); ++i)
+    {
+      (*flows)[i] = E[i]->getFlow();
+    }
+  }
+
+  void RoadNetwork::calculateNetworkFlowCosts (std::vector<double>* costs)
+  {
+    for (int i = 0; i < E.size(); ++i)
+    {
+      (*costs)[i] = E[i]->cost();
+    }
+  }
+
+  void RoadNetwork::loadAllOrNothing (std::vector<Path>* paths)
+  {
+    for (std::vector<Path>::iterator i = paths->begin(); i != paths->end(); ++i)
+    {
+      for (std::vector<Roadway*>::iterator j = i->route.begin(); j != i->route.end(); ++j)
+      {
+        j->incFlow(i->flow);
+      }
+    }
+  }
+
+  double RoadNetwork::relGapConvergenceTest (std::vector<double> currentFlows, std::vector<double> aonFlows, std::vector<double> costs)
+  {
+    double currentCostFlows, aonCostFlows;
+    for (int i = 0; i < currentFlows.size(); ++i)
+    {
+      currentCostFlows += currentFlows[i] * costs[i];
+      aonCostFlows += aonFlows[i] * costs[i];
+    }
+    return ((currentCostFlows - aonCostFlows) / currentCostFlows);
+  }
+
   // invariant: odpairs have been "found" aka for each o/d name we have found it's Intersection*
-  void RoadNetwork::runAllShortestPaths (std::vector<ODPair> odPairs)
+  void RoadNetwork::runAllShortestPaths (std::vector<ODPair>* odPairs, std::vector<Path>* paths)
   {
     int i;
     bool stoppingConditionNotMet = true;
-    std::vector<Path> paths;
-    std::vector<std::list<Intersection*> > intersections(odPairs.size() * 2, 0);
-    std::vector<std::list<std::pair<double,double> > > coordinates(odPairs.size() * 2, 0);
-    std::vector<std::list<double> > distances(odPairs.size() * 2, 0);
+    std::vector<std::list<Intersection*> > intersections(odPairs->size() * 2, 0);
+    std::vector<std::list<std::pair<double,double> > > coordinates(odPairs->size() * 2, 0);
+    std::vector<std::list<double> > distances(odPairs->size() * 2, 0);
     BidirectionalAStar* search;
-    // std::vector<ShortestPathTree> trees(odPairs.size() * 2);
+    // std::vector<ShortestPathTree> trees(odPairs->size() * 2);
     #pragma omp parallel shared(odPairs,intersections,coordinates,distances) firstprivate(stoppingConditionNotMet) private(i,search)
     {
       #pragma omp for schedule(static)
-      for (i = 0; i < odPairs.size() * 2; ++i)
+      for (i = 0; i < odPairs->size() * 2; ++i)
       {
-        Intersection* thisSource = odPairs[i/2].origin;
-        Intersection* thisDestination = odPairs[i/2].destination;
+        Intersection* thisSource = (*odPairs)[i/2].origin;
+        Intersection* thisDestination = (*odPairs)[i/2].destination;
         if ((i % 2) == 0)
           search = new BidirectionalAStar(thisSource, FORWARD);
         else
           search = new BidirectionalAStar(thisDestination, BACKWARD);
         double distance = euclidianDistance(thisSource,thisDestination);
-        Path result = shortestPath(odPairs[i/2], distance, intersections, coordinates, distances, search, i, stoppingConditionNotMet);
+        Path* result = shortestPath((*odPairs)[i/2], distance, intersections, coordinates, distances, search, i, stoppingConditionNotMet);
         #pragma omp critical
         if (isLocalMaster(i))
         {
-          paths.push_back(result);
+          paths->push_back(result);
         }
         delete search;
       }
@@ -96,9 +172,9 @@ namespace csci7551_project
     // }
   }
 
-  Path RoadNetwork::shortestPath (ODPair od, double dist, std::vector<std::list<Intersection*> > &intersections, std::vector<std::list<std::pair<double,double> > > coordinates, std::vector<std::list<double> > distances, BidirectionalAStar* search, int jobID, bool stoppingConditionNotMet)
+  Path* RoadNetwork::shortestPath (ODPair od, double dist, std::vector<std::list<Intersection*> > &intersections, std::vector<std::list<std::pair<double,double> > > coordinates, std::vector<std::list<double> > distances, BidirectionalAStar* search, int jobID, bool stoppingConditionNotMet)
   {
-    Path result(od.origin, od.destination, od.flow);
+    Path* result = new Path(od.origin, od.destination, od.flow);
     while (stoppingConditionNotMet)
     {
       search->updateFrontier();
