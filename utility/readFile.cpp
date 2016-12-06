@@ -6,7 +6,7 @@
 //
 //
 
-#include "readfile.h"
+#include "readFile.h"
 
 #include <fstream>
 #include <vector>
@@ -19,7 +19,7 @@
 
 namespace csci7551_project
 {
-    void readfile(const char* fileName, RoadNetwork& G)
+    void readFile(const char* fileName, RoadNetwork& G)
     {
         std::vector<int> result;
         std::ifstream file;

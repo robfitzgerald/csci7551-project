@@ -8,11 +8,20 @@
 
 namespace csci7551_project
 {
+  class Roadway;
   class Intersection : public Vertex
   {
   public:
     Intersection(IntersectionProperty* v): Vertex(v) {}
     Roadway* connect(Intersection*, CostFunction*);
+    inline IntersectionProperty* getIntersectionProperties()
+    {
+      return (IntersectionProperty*) this->getProps();
+    }
+    std::vector<Roadway*> getInRoads();
+    std::vector<Roadway*> getOutRoads();
+    std::vector<std::pair<Intersection*, double> > getForwardNeighbors();
+    std::vector<std::pair<Intersection*, double> > getReverseNeighbors();
   };
 }
 

@@ -69,6 +69,7 @@ namespace csci7551_project
     inline void connectOutflow (Edge* e) { out.push_back(e); }
     inline int assignID () { id = s_id++; return id; }
   };
+  
 }
 
 #endif
