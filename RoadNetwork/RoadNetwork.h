@@ -3,6 +3,7 @@
 
 #include <map>
 #include <vector>
+#include <list>
 #include <string>
 
 #include "CostFunction.h"
@@ -25,7 +26,7 @@ namespace csci7551_project
     ~Path(){}
     Intersection *start, *end;
     double flow;
-    std::vector<Roadway*> route;
+    std::list<Roadway*> route;
   };
 
   /**
@@ -107,17 +108,17 @@ namespace csci7551_project
      * runs a method of successive averages traffic assignment simulation with the provided trip matrix
      * @param std::vector<ODPair>* origin/destination pairs with flows (vehicle per time unit)
      */
-    void RoadNetwork::assignMSA (std::vector<ODPair>*);
+    void assignMSA (std::vector<ODPair>*);
     /**
      * runs a Frank-Wolfe traffic assignment simulation with the provided trip matrix
      * @param std::vector<ODPair>* origin/destination pairs with flows (vehicle per time unit)
      */
-    void RoadNetwork::assignFrankWolfe (std::vector<ODPair>*);
+    void assignFrankWolfe (std::vector<ODPair>*);
     void resetFlows ();
-    void calculateNetworkFlows (std::vector<double>*);
-    void calculateNetworkFlowCosts (std::vector<double>*);
+    void calculateNetworkFlows (std::vector<double>&);
+    void calculateNetworkFlowCosts (std::vector<double>&);
     double calculateCurrentFlow (double, double, double);
-    void loadAllOrNothing (std::vector<Path>*);
+    void loadAllOrNothing (std::vector<Path*>*);
     /**
      * convergence test for Frank Wolfe Algorithm
      * @param  currentFlows flows on each roadway at this iteration of the simulation
@@ -126,9 +127,9 @@ namespace csci7551_project
      * @return              value to compare for stopping the simulation (i.e. if (relGap < 0.0001) { break; })
      */
     double relGapConvergenceTest (std::vector<double>, std::vector<double>, std::vector<double>);
-    void runAllShortestPaths(std::vector<ODPair>);
-    Path* shortestPath (ODPair, double, std::vector<std::list<Intersection*> >&, std::vector<std::list<std::pair<double,double> > >, std::vector<std::list<double> >, BidirectionalAStar*, int, bool);
-    bool stoppingTest (double, const std::vector<double>&, int, bool);
+    void runAllShortestPaths(std::vector<ODPair>*, std::vector<Path*>*);
+    Path* shortestPath (ODPair, double, std::vector<std::list<Intersection*> >&, std::vector<std::list<std::pair<double,double> > >, std::vector<std::list<double> >, std::vector<BidirectionalAStar*>, int, std::vector<bool>);
+    bool stoppingTest (std::list<Intersection*>& a, std::list<Intersection*>& b);
     std::map<std::string,Intersection*> V;
     std::vector<Roadway*> E;
     CostFunction* costFunction;

@@ -80,7 +80,7 @@ namespace csci7551_project
     {
       NodeCostTuple source(s,0);
       AStarNode* n = new AStarNode(source);
-      n.setPath(s);
+      n->setPath(s);
       selected.insert(std::pair<Intersection*,AStarNode*>(s,n));
     }
     ~BidirectionalAStar ()

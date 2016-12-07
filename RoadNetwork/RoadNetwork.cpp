@@ -65,7 +65,7 @@ namespace csci7551_project
     for (int i = 1; i < simulationIterations; ++i)
     {
       double phi = 1.0 / i;
-      std::vector<Path>* paths = new std::vector<Path>();
+      std::vector<Path*>* paths = new std::vector<Path*>();
       runAllShortestPaths(odPairs, paths);  // omp enabled
       loadAllOrNothing(paths);
       std::vector<double> allOrNothingFlows, allOrNothingCosts;
@@ -95,33 +95,33 @@ namespace csci7551_project
   {
     for (std::vector<Roadway*>::iterator i = E.begin(); i != E.end(); ++i)
     {
-      i->setFlow(0);
+      (*i)->setFlow(0);
     }
   }
 
-  void RoadNetwork::calculateNetworkFlows (std::vector<double>* flows)
+  void RoadNetwork::calculateNetworkFlows (std::vector<double>& flows)
   {
     for (int i = 0; i < E.size(); ++i)
     {
-      (*flows)[i] = E[i]->getFlow();
+      flows[i] = E[i]->getFlow();
     }
   }
 
-  void RoadNetwork::calculateNetworkFlowCosts (std::vector<double>* costs)
+  void RoadNetwork::calculateNetworkFlowCosts (std::vector<double>& costs)
   {
     for (int i = 0; i < E.size(); ++i)
     {
-      (*costs)[i] = E[i]->cost();
+      costs[i] = E[i]->cost();
     }
   }
 
-  void RoadNetwork::loadAllOrNothing (std::vector<Path>* paths)
+  void RoadNetwork::loadAllOrNothing (std::vector<Path*>* paths)
   {
-    for (std::vector<Path>::iterator i = paths->begin(); i != paths->end(); ++i)
+    for (std::vector<Path*>::iterator i = paths->begin(); i != paths->end(); ++i)
     {
-      for (std::vector<Roadway*>::iterator j = i->route.begin(); j != i->route.end(); ++j)
+      for (std::list<Roadway*>::iterator j = (*i)->route.begin(); j != (*i)->route.end(); ++j)
       {
-        j->incFlow(i->flow);
+        (*j)->incFlow((*i)->flow);
       }
     }
   }
@@ -138,13 +138,13 @@ namespace csci7551_project
   }
 
   // invariant: odpairs have been "found" aka for each o/d name we have found it's Intersection*
-  void RoadNetwork::runAllShortestPaths (std::vector<ODPair>* odPairs, std::vector<Path>* paths)
+  void RoadNetwork::runAllShortestPaths (std::vector<ODPair>* odPairs, std::vector<Path*>* paths)
   {
     int i;
     std::vector<bool> stoppingConditionNotMet(odPairs->size() * 2, true);
-    std::vector<std::list<Intersection*> > intersections(odPairs->size() * 2, 0);
-    std::vector<std::list<std::pair<double,double> > > coordinates(odPairs->size() * 2, 0);
-    std::vector<std::list<double> > distances(odPairs->size() * 2, 0);
+    std::vector<std::list<Intersection*> > intersections(odPairs->size() * 2);
+    std::vector<std::list<std::pair<double,double> > > coordinates(odPairs->size() * 2);
+    std::vector<std::list<double> > distances(odPairs->size() * 2);
     std::vector<BidirectionalAStar*> search(odPairs->size() * 2, 0);
     #pragma omp parallel shared(odPairs,intersections,coordinates,distances,search) firstprivate(stoppingConditionNotMet) private(i)
     {
@@ -164,7 +164,7 @@ namespace csci7551_project
         {
           paths->push_back(result);
         }
-        search.erase(&search[i]);
+        search.erase(search.begin() + i);
       }
     }
 
@@ -176,7 +176,7 @@ namespace csci7551_project
     // }
   }
 
-  Path* RoadNetwork::shortestPath (ODPair od, double dist, std::vector<std::list<Intersection*> > &intersections, std::vector<std::list<std::pair<double,double> > > coordinates, std::vector<std::list<double> > distances, std::vector<BidirectionalAStar*> search, int jobID, bool stoppingConditionNotMet)
+  Path* RoadNetwork::shortestPath (ODPair od, double dist, std::vector<std::list<Intersection*> > &intersections, std::vector<std::list<std::pair<double,double> > > coordinates, std::vector<std::list<double> > distances, std::vector<BidirectionalAStar*> search, int jobID, std::vector<bool> stoppingConditionNotMet)
   {
     Path* result = new Path(od.origin, od.destination, od.flow);
     while (stoppingConditionNotMet[jobID])
@@ -203,7 +203,7 @@ namespace csci7551_project
       {
         // continue search [master,slave]
         compareLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]);
-        search[jobID]->moveToSelected(intersections[jobID][0]);
+        search[jobID]->moveToSelected(intersections[jobID].front());
         intersections.clear();
       }
       else if (isLocalMaster(jobID))
@@ -212,7 +212,7 @@ namespace csci7551_project
         // merge paths found
         // intersections has our intersection where they met
         // attach the two paths from search
-        result.route = search[jobID]->mergeBidirectionalPaths(search[jobID+1], Intersection*);
+        result->route = search[jobID]->mergeBidirectionalPaths(search[jobID+1], intersections[jobID].front());
         clearLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]);
       }
       else
@@ -242,7 +242,7 @@ namespace csci7551_project
       Roadway* e = *i;
       IntersectionProperty* sProps = (IntersectionProperty*) e->getSource()->getProps();
       IntersectionProperty* dProps = (IntersectionProperty*) e->getDestination()->getProps();
-      output << "(" << sProps->getName() << ")-->(" << dProps->getName() << ") distance: " << e->weight() << ", cost: " << e->->cost() << std::endl;
+      output << "(" << sProps->getName() << ")-->(" << dProps->getName() << ") distance: " << e->weight() << ", cost: " << e->cost() << std::endl;
     }
     return output.str();
   }
@@ -265,15 +265,15 @@ namespace csci7551_project
   bool RoadNetwork::stoppingTest (std::list<Intersection*>& a, std::list<Intersection*>& b)
   {
     bool matchFound = false;
-    Intersection* aMatch, bMatch;
-    for (std::list<Intersection*>::iterator i = a->begin(); i != a->end(); ++i)
+    Intersection *aMatch, *bMatch;
+    for (std::list<Intersection*>::iterator i = a.begin(); i != a.end(); ++i)
     {
-      for (std::list<Intersection*>::iterator j = a->begin(); j != a->end(); ++j)
+      for (std::list<Intersection*>::iterator j = b.begin(); j != b.end(); ++j)
       {
-        if (i==j)
+        if ((*i)==(*j))
         {
-          aMatch = i;
-          bMatch = j;
+          aMatch = (*i);
+          bMatch = (*j);
           matchFound = true;
         }
       }
