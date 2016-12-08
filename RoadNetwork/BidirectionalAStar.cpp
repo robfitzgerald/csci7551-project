@@ -14,6 +14,9 @@ namespace csci7551_project
   typedef std::list<double>::iterator DistancesIterator;
   typedef std::list<Intersection*>::iterator IntersectionIterator;
   typedef std::list<FrontierCost>::iterator FrontierCostIterator;
+  typedef std::pair<Intersection*,AStarNode*> AStarMapTuple;
+  typedef std::pair<std::list<Intersection*>::iterator,std::list<Intersection*>::iterator> SlidingIntersectionIterator;
+  typedef std::pair<std::list<Intersection*>::iterator,std::list<Intersection*>::iterator> SlidingReverseIntersectionIterator;
 
   const double SENTINEL = std::numeric_limits<double>::max();
   
@@ -23,14 +26,14 @@ namespace csci7551_project
     if (parentIterator != selected.end())
     {
       AStarNode* parent = parentIterator->second;
-      NeighborVector* neighbors;
+      NeighborVector neighbors;
       if (direction == FORWARD)
-        neighbors = i->node->getForwardNeighbors();
+        neighbors = i->getForwardNeighbors();
       else if (direction == BACKWARD)
-        neighbors = i->node->getReverseNeighbors();
+        neighbors = i->getReverseNeighbors();
 
       // for each neighbor of each selected node
-      for (NeighborIterator j = neighbors->begin(); j != neighbors->end(); ++j)
+      for (NeighborIterator j = neighbors.begin(); j != neighbors.end(); ++j)
       {
         AStarMapIterator frontierIterator = frontier.find(j->first);
         AStarMapIterator selectedIterator = selected.find(j->first);
@@ -43,9 +46,9 @@ namespace csci7551_project
           // calculate g for it (may be overwritten if found again)
           newFrontier->setPathDistance(totalDistanceViaThisPath);
           // add path so far
-          newFrontier->setPathAndAppend(parent->getPath(), parent);
+          newFrontier->setPathAndAppend(parent->getPath(), parent->node);
           // add it to the frontier
-          frontier.insert(newFrontier);
+          frontier.insert(AStarMapTuple((*j).first,newFrontier));
         }
         // if it's already in frontier (only), check that this isn't a lower-cost path to it
         else if ((frontierIterator != frontier.end()) && (selectedIterator == selected.end()))
@@ -55,7 +58,7 @@ namespace csci7551_project
           {
             // the way we got to it this time is quicker. update path and distance
             node->setPathDistance(totalDistanceViaThisPath);
-            node->setPathAndAppend(parent->getPath(), parent);
+            node->setPathAndAppend(parent->getPath(), parent->node);
           }
         }
       }
@@ -68,18 +71,18 @@ namespace csci7551_project
     
     for (AStarMapIterator iter = frontier.begin(); iter != frontier.end(); ++iter)
     {
-      double pathDistance = iter->getPathDistance();
-      intersectionProperty* props = iter->second->node->getIntersectionProperties();
+      double pathDistance = iter->second->getPathDistance();
+      IntersectionProperty* props = iter->second->node->getIntersectionProperties();
       FrontierCost tuple(iter->first, Coordinate(props->getX(), props->getY()), pathDistance);
       output.push_back(tuple);
     }
     return output;
   }
 
-  void loadCompareList (std::list<Intersection*>& intersections, std::list<std::pair<double, double> >& coordinates, std::list<double>& distances)
+  void BidirectionalAStar::loadCompareList (std::list<Intersection*>& intersections, std::list<std::pair<double, double> >& coordinates, std::list<double>& distances)
   {
     std::list<FrontierCost> costs = frontierCosts();
-    for (FrontierCostIterator iter = costs.begin(); iter != costs.end(); ++i)
+    for (FrontierCostIterator iter = costs.begin(); iter != costs.end(); ++iter)
     {
       intersections.push_back(iter->node);
       coordinates.push_back(Coordinate(iter->x,iter->y));
@@ -95,43 +98,44 @@ namespace csci7551_project
       Intersection* key = iter->first;
       AStarNode* value = iter->second;
       value->setDirection(this->direction);
-      selected.insert(std::pair<Intersection*,AStarNode*>(key, value));
+      selected.insert(AStarMapTuple(key, value));
       frontier.erase(i);
       updateFrontier(i);
-      setTopDistance(value->getPathDistance());
+      // setTopDistance(value->getPathDistance());
       return true;
     }
     else
       return false;
   }
 
-  std::list<Roadway*> mergeBidirectionalPaths(search[jobID+1] reverseSearch, Intersection* meetingPoint)
+  std::list<Roadway*> BidirectionalAStar::mergeBidirectionalPaths(BidirectionalAStar* reverseSearch, Intersection* meetingPoint)
   {
     std::list<Roadway*> output;
     std::list<Intersection*> leftPath = this->getAStarNodeFromIntersection(meetingPoint)->getPath();
     std::list<Intersection*> rightPath = reverseSearch->getAStarNodeFromIntersection(meetingPoint)->getPath();
-    for (int i = 0; i < leftPath.size(); ++i)
+    for (SlidingIntersectionIterator i = SlidingIntersectionIterator(leftPath.begin(),(leftPath.begin()++)); i.second != leftPath.end(); i.first++, i.second++)
     {
       // find all the edges between successive values
-      std::vector<Roadway*> outRoads = leftPath[i]->getOutRoads()
-      for (std::vector<Roadway*>::iterator j = outRoads.begin(); j != outRoads.end(); ++j)
+      std::vector<Roadway*> outRoads = (*i.first)->getOutRoads();
+      for (std::vector<Roadway*>::iterator j = outRoads.begin(); j != outRoads.end(); ++j) 
       {
-        if (outRoads[j]->getDestinationIntersection() == leftPath[i+1])
+        if ((*j)->getDestinationIntersection() == (*i.second))
         {
-          output.push_back(outRoads[j]);
+          output.push_back((*j));
           j = outRoads.end();
         }
       }
     }
-    for (int i = rightPath.size()-1; i >= 0; --i)
+
+    for (SlidingReverseIntersectionIterator i = SlidingIntersectionIterator((leftPath.end()--),(leftPath.end())); i.second != leftPath.begin(); i.first--, i.second--)
     {
       // find all the edges between successive values
-      std::vector<Roadway*> inRoads = leftPath[i]->getInRoads()
+      std::vector<Roadway*> inRoads = (*i.second)->getInRoads();
       for (std::vector<Roadway*>::iterator j = inRoads.begin(); j != inRoads.end(); ++j)
       {
-        if (inRoads[j]->getSourceIntersection() == leftPath[i-1])
+        if ((*j)->getSourceIntersection() == (*i.first))
         {
-          output.push_back(inRoads[j]);
+          output.push_back((*j));
           j = inRoads.end();
         }
       }
@@ -141,7 +145,7 @@ namespace csci7551_project
 
   AStarNode* BidirectionalAStar::getAStarNodeFromIntersection (Intersection* target)
   {
-    return selected.find(meetingPoint);
+    return selected.find(target)->second;
   }
 
   // at the end, best picks will be in leftIntersections[0] and rightIntersections[0]
@@ -149,18 +153,26 @@ namespace csci7551_project
   {
     Intersection *bestLeft = 0, *bestRight = 0;
     double bestHeuristic = SENTINEL;
-    for (int left = 0; left < leftIntersections.size(); ++left)
+    std::list<std::pair<double, double> >::iterator leftCoordIter = leftCoordinates.begin();
+    std::list<double>::iterator leftDistIter = leftDistances.begin();
+    for (std::list<Intersection*>::iterator leftIntIter = leftIntersections.begin(); leftIntIter != leftIntersections.end(); ++leftIntIter)
     {
-      for (int right = 0; right < rightIntersections.size(); ++right)
+      std::list<std::pair<double, double> >::iterator rightCoordIter = rightCoordinates.begin();
+      std::list<double>::iterator rightDistIter = rightDistances.begin();
+      for (std::list<Intersection*>::iterator rightIntIter = rightIntersections.begin(); rightIntIter != rightIntersections.end(); ++rightIntIter)
       {
-        double thisHeuristic = heuristic(leftCoordinates[left].first, leftCoordinates[left].second, leftDistances[left], rightCoordinates[right].first, rightCoordinates[right].second, rightDistances[right]);
+        double thisHeuristic = heuristic((*leftCoordIter), (*leftDistIter), (*rightCoordIter), (*rightDistIter));
         if (thisHeuristic < bestHeuristic)
         {
-          bestLeft = leftIntersections[left];
-          bestRight = rightIntersections[right];
+          bestLeft = (*leftIntIter);
+          bestRight = (*rightIntIter);
           bestHeuristic = thisHeuristic;
         }
+        ++rightCoordIter;
+        ++rightDistIter;        
       }
+      ++leftCoordIter;
+      ++leftDistIter;
     }
     clearLists(leftIntersections,leftCoordinates,leftDistances,rightIntersections,rightCoordinates,rightDistances);
     leftIntersections.push_back(bestLeft);

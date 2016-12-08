@@ -181,7 +181,6 @@ namespace csci7551_project
     Path* result = new Path(od.origin, od.destination, od.flow);
     while (stoppingConditionNotMet[jobID])
     {
-      search[jobID]->updateFrontier();
       search[jobID]->loadCompareList(intersections[jobID],coordinates[jobID],distances[jobID]);
 
       #pragma omp critical

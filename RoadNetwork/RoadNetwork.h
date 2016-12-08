@@ -95,15 +95,15 @@ namespace csci7551_project
      * @param s simulation type enumeration that switches the algorithm chosen
      */
     void setSimulationType (SIMULATION_TYPE s) { simulationType = s; }
-  private:
-    SIMULATION_TYPE simulationType;
-    unsigned int simulationIterations;
     /**
-     * lookup an intersection pointer by name
+     * lookup an intersection pointer by name (using in testing)
      * @param  std::string intersection name
      * @return             pointer to intersection, or zero if not found
      */
     Intersection* getIntersection (std::string);
+  private:
+    SIMULATION_TYPE simulationType;
+    unsigned int simulationIterations;
     /**
      * runs a method of successive averages traffic assignment simulation with the provided trip matrix
      * @param std::vector<ODPair>* origin/destination pairs with flows (vehicle per time unit)

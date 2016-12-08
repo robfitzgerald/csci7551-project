@@ -18,10 +18,10 @@ namespace csci7551_project
   typedef std::pair<Intersection*, double> NodeCostTuple;
   struct FrontierCost
   {
-    FrontierCost(Intersection* n, double xVal, double yVal, double d):
+    FrontierCost(Intersection* n, Coordinate pos, double d):
       node(n),
-      x(xVal),
-      y(yVal),
+      x(pos.first),
+      y(pos.second),
       distance(d) {}
     Intersection* node;
     double x;
@@ -74,7 +74,7 @@ namespace csci7551_project
   {
   public:
     BidirectionalAStar (Intersection* s, A_STAR_DIRECTION d): 
-      topDistance(0),
+      // topDistance(0),
       latest(s),
       direction(d)
     {
@@ -96,7 +96,7 @@ namespace csci7551_project
       selected.clear();
       frontier.clear();
     }
-    void updateFrontier ();
+    void updateFrontier (Intersection*);
     void loadCompareList (std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&);
     bool moveToSelected (Intersection*);
     const AStarMapIterator getSelectedIterator () { return selected.begin(); }
@@ -105,14 +105,14 @@ namespace csci7551_project
   private:
     std::list<FrontierCost> frontierCosts ();
     A_STAR_DIRECTION direction;
-    double topDistance;
+    // double topDistance;
     Intersection* latest;
     std::map<Intersection*, AStarNode*> frontier;
     std::map<Intersection*, AStarNode*> selected;
   };
   void compareLists (std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&, std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&);
   void clearLists (std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&, std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&);
-  double heuristic (double,double,double,double,double,double);
+  double heuristic (Coordinate, double, Coordinate, double);
   double euclidianDistance (Coordinate,Coordinate);
 }
 
