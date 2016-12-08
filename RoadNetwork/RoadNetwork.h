@@ -128,8 +128,8 @@ namespace csci7551_project
      */
     double relGapConvergenceTest (std::vector<double>, std::vector<double>, std::vector<double>);
     void runAllShortestPaths(std::vector<ODPair>*, std::vector<Path*>*);
-    Path* shortestPath (ODPair, double, std::vector<std::list<Intersection*> >&, std::vector<std::list<std::pair<double,double> > >, std::vector<std::list<double> >, std::vector<BidirectionalAStar*>, int, std::vector<bool>);
-    bool stoppingTest (std::list<Intersection*>& a, std::list<Intersection*>& b);
+    Path* shortestPath (ODPair, double, std::vector<std::list<Intersection*> >&, std::vector<std::list<std::pair<double,double> > >, std::vector<std::list<double> >, std::vector<BidirectionalAStar*>, int, std::vector<bool>, std::vector<bool>);
+    bool stoppingTest (std::list<Intersection*>&, std::list<Intersection*>&, Intersection*&, Intersection*&);
     std::map<std::string,Intersection*> V;
     std::vector<Roadway*> E;
     CostFunction* costFunction;
