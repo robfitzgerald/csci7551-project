@@ -22,9 +22,9 @@ int main ()
   proj::Intersection* D = roadNetwork.getIntersection("D");
   proj::Intersection* A = roadNetwork.getIntersection("A"); 
   proj::ODPair p(A,O,50);
-  proj::ODPair q(A,D,100);
+  // proj::ODPair q(A,D,100);
   odPairs->push_back(p);
-  odPairs->push_back(q);
+  // odPairs->push_back(q);
 
   std::cout << "----- about to toString -----" << std::endl;
 

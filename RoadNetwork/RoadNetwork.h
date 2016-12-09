@@ -128,7 +128,7 @@ namespace csci7551_project
      */
     double relGapConvergenceTest (std::vector<double>, std::vector<double>, std::vector<double>);
     void runAllShortestPaths(std::vector<ODPair>*, std::vector<Path*>*);
-    Path* shortestPath (ODPair, double, std::vector<std::list<Intersection*> >&, std::vector<std::list<std::pair<double,double> > >, std::vector<std::list<double> >, std::vector<BidirectionalAStar*>, int, std::vector<bool>, std::vector<bool>);
+    void shortestPath (ODPair&, Path*&, std::vector<std::list<Intersection*> >&, std::vector<std::list<std::pair<double,double> > >&, std::vector<std::list<double> >&, std::vector<BidirectionalAStar*>&, int&, std::vector<bool>&, std::vector<bool>&, std::vector<bool>&, Intersection*&, Intersection*&, bool&, bool&);
     bool stoppingTest (std::list<Intersection*>&, std::list<Intersection*>&, Intersection*&, Intersection*&);
     std::map<std::string,Intersection*> V;
     std::vector<Roadway*> E;
@@ -138,6 +138,7 @@ namespace csci7551_project
   double euclidianDistance (Intersection*,Intersection*);
   bool isLocalMaster (int);
   void printTree (Intersection*, int);
+  bool waitForMyBuddy(int,std::vector<bool>);
   A_STAR_DIRECTION pickSearchDirection (int);
 
 }

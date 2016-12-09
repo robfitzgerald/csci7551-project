@@ -22,6 +22,11 @@ namespace csci7551_project
     std::vector<Roadway*> getOutRoads();
     std::vector<std::pair<Intersection*, double> > getForwardNeighbors();
     std::vector<std::pair<Intersection*, double> > getReverseNeighbors();
+    inline std::string getName() 
+    {
+      IntersectionProperty* temp = this->getIntersectionProperties();
+      return temp->getName();
+    }
   };
 }
 

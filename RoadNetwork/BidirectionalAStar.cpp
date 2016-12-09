@@ -1,7 +1,8 @@
 #include <list>
 #include <vector>
-#include <limits>
 #include <cmath>
+#include <limits>
+#include <iostream>
 
 #include "BidirectionalAStar.h"
 #include "Intersection.h"
@@ -17,9 +18,9 @@ namespace csci7551_project
   typedef std::pair<Intersection*,AStarNode*> AStarMapTuple;
   typedef std::pair<std::list<Intersection*>::iterator,std::list<Intersection*>::iterator> SlidingIntersectionIterator;
   typedef std::pair<std::list<Intersection*>::iterator,std::list<Intersection*>::iterator> SlidingReverseIntersectionIterator;
-
-  const double SENTINEL = std::numeric_limits<double>::max();
   
+  const double SENTINEL = std::numeric_limits<double>::max();
+
   void BidirectionalAStar::updateFrontier(Intersection* i)
   {
     AStarMapIterator parentIterator = selected.find(i);
@@ -148,6 +149,16 @@ namespace csci7551_project
     return selected.find(target)->second;
   }
 
+  void clearLists (std::list<Intersection*>& a, std::list<std::pair<double, double> >& b, std::list<double>& c, std::list<Intersection*>& d, std::list<std::pair<double, double> >& e, std::list<double>& f)
+  {
+    a.clear();
+    b.clear();
+    c.clear();
+    d.clear();
+    e.clear();
+    f.clear();
+  }
+
   // at the end, best picks will be in leftIntersections[0] and rightIntersections[0]
   void compareLists (std::list<Intersection*>& leftIntersections, std::list<std::pair<double, double> >& leftCoordinates, std::list<double>& leftDistances, std::list<Intersection*>& rightIntersections, std::list<std::pair<double, double> >& rightCoordinates, std::list<double>& rightDistances)
   {
@@ -162,6 +173,8 @@ namespace csci7551_project
       for (std::list<Intersection*>::iterator rightIntIter = rightIntersections.begin(); rightIntIter != rightIntersections.end(); ++rightIntIter)
       {
         double thisHeuristic = heuristic((*leftCoordIter), (*leftDistIter), (*rightCoordIter), (*rightDistIter));
+        std::cout << "thisHeuristic: " << thisHeuristic << " from center distance: " << euclidianDistance((*leftCoordIter),(*rightCoordIter)) << std::endl;
+        std::cout << "left, right intersections: " << (*leftIntIter)->getName() << ", " << (*rightIntIter)->getName() << std::endl;
         if (thisHeuristic < bestHeuristic)
         {
           bestLeft = (*leftIntIter);
@@ -177,16 +190,6 @@ namespace csci7551_project
     clearLists(leftIntersections,leftCoordinates,leftDistances,rightIntersections,rightCoordinates,rightDistances);
     leftIntersections.push_back(bestLeft);
     rightIntersections.push_back(bestRight);
-  }
-
-  void clearLists (std::list<Intersection*>& a, std::list<std::pair<double, double> >& b, std::list<double>& c, std::list<Intersection*>& d, std::list<std::pair<double, double> >& e, std::list<double>& f)
-  {
-    a.clear();
-    b.clear();
-    c.clear();
-    d.clear();
-    e.clear();
-    f.clear();
   }
 
   double heuristic (Coordinate left, double leftD, Coordinate right, double rightD)
