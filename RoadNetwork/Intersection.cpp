@@ -1,5 +1,6 @@
 #include <vector>
 #include <utility>
+#include <iostream>
 
 #include "Graph.h"
 #include "Intersection.h"
@@ -35,33 +36,67 @@ namespace csci7551_project
     return result;
   }  
 
-  std::vector<std::pair<Intersection*, double> > Intersection::getForwardNeighbors()
+  std::vector<NodeCostTuple> Intersection::getForwardNeighbors()
   {
     std::vector<Edge*> flows = this->getOutflows();
-    std::vector<std::pair<Intersection*, double> > result;
+    std::vector<NodeCostTuple> result;
     for (int i = 0; i < flows.size(); ++i)
     {
-      Intersection* d = ((Roadway*) flows[i])->getDestinationIntersection();
+      Intersection* dest = ((Roadway*) flows[i])->getDestinationIntersection();
       double c = ((Roadway*) flows[i])->cost();
-      std::pair<Intersection*, double> neighbor(d,c);
+      double d = ((Roadway*) flows[i])->getDistance();
+      NodeCostTuple neighbor(dest,d,c);
       result.push_back(neighbor);
     } 
     return result;
   }
 
-  std::vector<std::pair<Intersection*, double> > Intersection::getReverseNeighbors()
+  std::vector<NodeCostTuple> Intersection::getReverseNeighbors()
   {
     std::vector<Edge*> flows = this->getInflows();
-    std::vector<std::pair<Intersection*, double> > result;
+    std::vector<NodeCostTuple> result;
     for (int i = 0; i < flows.size(); ++i)
     {
-      Intersection* d = ((Roadway*) flows[i])->getSourceIntersection();
+      Intersection* dest = ((Roadway*) flows[i])->getSourceIntersection();
       double c = ((Roadway*) flows[i])->cost();
-      std::pair<Intersection*, double> neighbor(d,c);
+      double d = ((Roadway*) flows[i])->getDistance();
+      NodeCostTuple neighbor(dest,d,c);
       result.push_back(neighbor);
     } 
     return result;
+  } 
+
+  double euclidianDistance (Intersection* s, Intersection* d)
+  {
+    IntersectionProperty* source = (IntersectionProperty*) s->getProps();
+    IntersectionProperty* destination = (IntersectionProperty*) d->getProps();
+    double x = destination->getX() - source->getX();
+    double y = destination->getY() - source->getY();
+    return sqrt(x*x + y*y);
   }  
+
+  void Intersection::printTree()
+  {
+    printOutTree(this, 0);
+  }
+
+  void Intersection::printOutTree (Intersection* s, int depth)
+  {
+    IntersectionProperty* prop = s->getIntersectionProperties();
+    std::string output = "";
+    for (int j = 0; j < depth; ++j)
+        output += " ";
+    output += prop->getName();
+    std::cout << output << std::endl;
+
+    std::vector<Roadway*> outflows = s->getOutRoads();
+    for (int i = 0; i < outflows.size(); ++i)
+    {
+      Intersection* dest = outflows[i]->getDestinationIntersection();
+      printOutTree(dest, depth+1);
+    }
+  }
+
 }
 
 

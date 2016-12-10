@@ -33,32 +33,37 @@ namespace csci7551_project
       else if (direction == BACKWARD)
         neighbors = i->getReverseNeighbors();
 
+      std::cout << "updateFrontier, found parent: " << parentIterator->second->node->getIntersectionProperties()->getName() << std::endl;
+
       // for each neighbor of each selected node
       for (NeighborIterator j = neighbors.begin(); j != neighbors.end(); ++j)
       {
-        AStarMapIterator frontierIterator = frontier.find(j->first);
-        AStarMapIterator selectedIterator = selected.find(j->first);
-        double totalDistanceViaThisPath = parent->getPathDistance() + j->second;
+        AStarMapIterator frontierIterator = frontier.find(j->node);
+        AStarMapIterator selectedIterator = selected.find(j->node);
+        double totalDistanceViaThisPath = parent->getPathDistance() + j->distance;
+        double totalCostViaThisPath = parent->getPathCost() + j->cost;
 
         // if it's not already in the frontier and not in selected, add it to the frontier        
         if ((frontierIterator == frontier.end()) && (selectedIterator == selected.end()))
         {
-          AStarNode* newFrontier = new AStarNode(NodeCostTuple(*j));
+          AStarNode* newFrontier = new AStarNode(*j);
           // calculate g for it (may be overwritten if found again)
           newFrontier->setPathDistance(totalDistanceViaThisPath);
+          newFrontier->setPathCost(totalCostViaThisPath);
           // add path so far
           newFrontier->setPathAndAppend(parent->getPath(), parent->node);
           // add it to the frontier
-          frontier.insert(AStarMapTuple((*j).first,newFrontier));
+          frontier.insert(AStarMapTuple((*j).node,newFrontier));
         }
         // if it's already in frontier (only), check that this isn't a lower-cost path to it
         else if ((frontierIterator != frontier.end()) && (selectedIterator == selected.end()))
         {
           AStarNode* node = frontierIterator->second;
-          if (totalDistanceViaThisPath < node->getPathDistance())
+          if (totalCostViaThisPath < node->getPathCost())
           {
             // the way we got to it this time is quicker. update path and distance
             node->setPathDistance(totalDistanceViaThisPath);
+            node->setPathCost(totalCostViaThisPath);
             node->setPathAndAppend(parent->getPath(), parent->node);
           }
         }
@@ -69,12 +74,13 @@ namespace csci7551_project
   std::list<FrontierCost> BidirectionalAStar::frontierCosts()
   {
     std::list<FrontierCost> output;
-    
+    // std::cout << "starting frontierCosts with frontier of size " << frontier.size() << std::endl;
     for (AStarMapIterator iter = frontier.begin(); iter != frontier.end(); ++iter)
     {
-      double pathDistance = iter->second->getPathDistance();
+      double pathCost = iter->second->getPathCost();
       IntersectionProperty* props = iter->second->node->getIntersectionProperties();
-      FrontierCost tuple(iter->first, Coordinate(props->getX(), props->getY()), pathDistance);
+      // std::cout << "inside frontierCosts: " << pathCost << ", " << props->getName() << std::endl;
+      FrontierCost tuple(iter->first, Coordinate(props->getX(), props->getY()), pathCost);
       output.push_back(tuple);
     }
     return output;
@@ -87,7 +93,7 @@ namespace csci7551_project
     {
       intersections.push_back(iter->node);
       coordinates.push_back(Coordinate(iter->x,iter->y));
-      distances.push_back(iter->distance);
+      distances.push_back(iter->cost);
     }
   }
 

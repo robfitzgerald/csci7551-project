@@ -12,30 +12,38 @@
 
 namespace csci7551_project
 {
+  class AStarNode;
+
   enum A_STAR_DIRECTION { NODIRECTION, FORWARD, BACKWARD };
   enum EXPLORE_STATE {UNSET, FRONTIER, SELECTED};
   typedef std::pair<double, double> Coordinate;
-  typedef std::pair<Intersection*, double> NodeCostTuple;
+  typedef std::map<Intersection*, AStarNode*>::iterator AStarMapIterator;
+
   struct FrontierCost
   {
     FrontierCost(Intersection* n, Coordinate pos, double d):
       node(n),
       x(pos.first),
       y(pos.second),
-      distance(d) {}
+      cost(d) {}
     Intersection* node;
     double x;
     double y;
-    double distance;
+    double cost;
   };
 
   class AStarNode
   {
   public:
     AStarNode(NodeCostTuple n): 
-      node(n.first), 
-      distance(n.second), 
-      direction(NODIRECTION) {}
+      node(n.node), 
+      distance(n.distance), 
+      cost(n.cost),
+      direction(NODIRECTION) 
+      {
+        pathDistance = 0;
+        pathCost = 0;
+      }
     ~AStarNode() { path.clear(); }
 
     inline std::list<Intersection*> getPath () { return path; }
@@ -49,6 +57,8 @@ namespace csci7551_project
     }
     inline void setPathDistance (double d) { pathDistance = d; }
     inline double getPathDistance () { return pathDistance; }
+    inline void setPathCost (double d) { pathCost = d; }
+    inline double getPathCost () { return pathCost; }
     inline bool setDirection (A_STAR_DIRECTION d)
     {
       if (direction == 0) 
@@ -61,14 +71,12 @@ namespace csci7551_project
     }
     Intersection* node;
   private:
-    double distance;
-    double pathDistance;
+    double distance, cost;
+    double pathDistance, pathCost;
     A_STAR_DIRECTION direction;
     EXPLORE_STATE state;
     std::list<Intersection*> path;
   };
-
-  typedef std::map<Intersection*, AStarNode*>::iterator AStarMapIterator;
 
   class BidirectionalAStar
   {
@@ -78,10 +86,11 @@ namespace csci7551_project
       latest(s),
       direction(d)
     {
-      NodeCostTuple source(s,0);
+      NodeCostTuple source(s,0,0);
       AStarNode* n = new AStarNode(source);
       n->setPath(s);
-      selected.insert(std::pair<Intersection*,AStarNode*>(s,n));
+      frontier.insert(std::pair<Intersection*,AStarNode*>(s,n));
+      moveToSelected(s);
     }
     ~BidirectionalAStar ()
     {
@@ -102,8 +111,8 @@ namespace csci7551_project
     const AStarMapIterator getSelectedIterator () { return selected.begin(); }
     std::list<Roadway*> mergeBidirectionalPaths(BidirectionalAStar*, Intersection*);
     AStarNode* getAStarNodeFromIntersection (Intersection*);
-  private:
     std::list<FrontierCost> frontierCosts ();
+  private:
     A_STAR_DIRECTION direction;
     // double topDistance;
     Intersection* latest;

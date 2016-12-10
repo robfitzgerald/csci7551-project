@@ -135,7 +135,6 @@ namespace csci7551_project
     CostFunction* costFunction;
   };
 
-  double euclidianDistance (Intersection*,Intersection*);
   bool isLocalMaster (int);
   void printTree (Intersection*, int);
   bool waitForMyBuddy(int,std::vector<bool>);

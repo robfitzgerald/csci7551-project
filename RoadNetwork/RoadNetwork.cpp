@@ -332,15 +332,6 @@ namespace csci7551_project
     return output.str();
   }
 
-  double euclidianDistance (Intersection* s, Intersection* d)
-  {
-    IntersectionProperty* source = (IntersectionProperty*) s->getProps();
-    IntersectionProperty* destination = (IntersectionProperty*) d->getProps();
-    double x = destination->getX() - source->getX();
-    double y = destination->getY() - source->getY();
-    return sqrt(x*x + y*y);
-  }
-
   // even numbered pid's will be master to their odd-numbered counterparts pid+1
   bool isLocalMaster (int pid)
   {
