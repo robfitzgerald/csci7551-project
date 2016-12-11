@@ -16,6 +16,7 @@ namespace csci7551_project
       distance(d),
       cost(c) {}
     Intersection* node;
+    Roadway* roadwayToNode;
     double distance;
     double cost;
   };
@@ -25,7 +26,7 @@ namespace csci7551_project
   public:
     Intersection(IntersectionProperty* v): Vertex(v) {}
     Roadway* connect(Intersection*, CostFunction*);
-    inline IntersectionProperty* getIntersectionProperties()
+    inline IntersectionProperty* getIntersectionProperties() const
     {
       return (IntersectionProperty*) this->getProps();
     }
@@ -33,7 +34,7 @@ namespace csci7551_project
     std::vector<Roadway*> getOutRoads();
     std::vector<NodeCostTuple> getForwardNeighbors();
     std::vector<NodeCostTuple> getReverseNeighbors();
-    inline std::string getName() 
+    inline std::string getName() const
     {
       IntersectionProperty* temp = this->getIntersectionProperties();
       return temp->getName();
@@ -41,6 +42,12 @@ namespace csci7551_project
     void printTree();
     void printOutTree(Intersection*, int);
   };
+
+  inline bool operator < (const Intersection& lhs, const Intersection& rhs)
+  {
+    return lhs.getName() < rhs.getName();
+  }
+
   double euclidianDistance (Intersection*,Intersection*);
 }
 

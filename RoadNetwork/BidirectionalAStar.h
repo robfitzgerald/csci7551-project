@@ -74,16 +74,19 @@ namespace csci7551_project
     double distance, cost;
     double pathDistance, pathCost;
     A_STAR_DIRECTION direction;
-    EXPLORE_STATE state;
+    // EXPLORE_STATE state;
     std::list<Intersection*> path;
   };
+
+  // http://stackoverflow.com/questions/25122932/pointers-as-keys-in-map-c-stl
+  template<class T> struct ptr_less {
+    bool operator()(T* lhs, T* rhs) {
+        return *lhs < *rhs; }};
 
   class BidirectionalAStar
   {
   public:
     BidirectionalAStar (Intersection* s, A_STAR_DIRECTION d): 
-      // topDistance(0),
-      latest(s),
       direction(d)
     {
       NodeCostTuple source(s,0,0);
@@ -96,7 +99,7 @@ namespace csci7551_project
     {
       for (AStarMapIterator i = selected.begin(); i != selected.end(); ++i)
       {
-        delete i->second;
+        delete i->second; // this should just clear the backtrace paths in the search
       }
       for (AStarMapIterator i = frontier.begin(); i != frontier.end(); ++i)
       {
@@ -108,19 +111,18 @@ namespace csci7551_project
     void updateFrontier (Intersection*);
     void loadCompareList (std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&);
     bool moveToSelected (Intersection*);
-    const AStarMapIterator getSelectedIterator () { return selected.begin(); }
+    std::pair<AStarMapIterator,AStarMapIterator> getSelectedIterator () { return std::pair<AStarMapIterator,AStarMapIterator>(selected.begin(),selected.end()); }
     std::list<Roadway*> mergeBidirectionalPaths(BidirectionalAStar*, Intersection*);
     AStarNode* getAStarNodeFromIntersection (Intersection*);
     std::list<FrontierCost> frontierCosts ();
+    void printLists();
+    void compareLists (std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&, std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&);
+    void clearLists (std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&, std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&);
   private:
     A_STAR_DIRECTION direction;
-    // double topDistance;
-    Intersection* latest;
-    std::map<Intersection*, AStarNode*> frontier;
-    std::map<Intersection*, AStarNode*> selected;
+    std::map<Intersection*, AStarNode*, ptr_less<Intersection> > frontier;
+    std::map<Intersection*, AStarNode*, ptr_less<Intersection> > selected;
   };
-  void compareLists (std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&, std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&);
-  void clearLists (std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&, std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&);
   double heuristic (Coordinate, double, Coordinate, double);
   double euclidianDistance (Coordinate,Coordinate);
 }

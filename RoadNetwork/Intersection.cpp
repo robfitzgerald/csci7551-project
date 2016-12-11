@@ -1,6 +1,7 @@
 #include <vector>
 #include <utility>
 #include <iostream>
+#include <cmath>
 
 #include "Graph.h"
 #include "Intersection.h"
@@ -68,11 +69,14 @@ namespace csci7551_project
 
   double euclidianDistance (Intersection* s, Intersection* d)
   {
+    std::cout << "Intersection euclidianDistance(): ";
+    std::cout << s->getName() << " -> " << d->getName() << " | ";
     IntersectionProperty* source = (IntersectionProperty*) s->getProps();
     IntersectionProperty* destination = (IntersectionProperty*) d->getProps();
-    double x = destination->getX() - source->getX();
-    double y = destination->getY() - source->getY();
-    return sqrt(x*x + y*y);
+    double x = std::abs(destination->getX() - source->getX());
+    double y = std::abs(destination->getY() - source->getY());
+    std::cout << "(" << x << "," << y << ") - " << (((x + y) == 0) ? 0 : sqrt(x*x + y*y)) << std::endl;
+    return ((x + y) == 0) ? 0 : std::sqrt(x*x + y*y);
   }  
 
   void Intersection::printTree()

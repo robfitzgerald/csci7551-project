@@ -54,11 +54,11 @@ namespace csci7551_project
       delete props;
     }
     inline int getID () const { return id; }
-    inline VertexProperty* getProps() { return props; }
+    inline VertexProperty* getProps() const { return props; }
     Edge* connect(Vertex*);
     Edge* connect(Vertex*, Edge*);
-    std::vector<Edge*> getInflows() { return in; }
-    std::vector<Edge*> getOutflows() { return out; }
+    std::vector<Edge*> getInflows() const { return in; }
+    std::vector<Edge*> getOutflows() const { return out; }
   private:
     VertexProperty* props;
     std::vector<Edge*> in, out;

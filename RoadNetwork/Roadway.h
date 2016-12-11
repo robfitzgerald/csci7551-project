@@ -1,9 +1,12 @@
 #ifndef _CSCI7551_PROJECT_ROADWAY_H_
 #define _CSCI7551_PROJECT_ROADWAY_H_
 
+// #include <iostream>
+
 #include "Graph.h"
 #include "Intersection.h"
 #include "CostFunction.h"
+
 
 namespace csci7551_project
 {
@@ -32,6 +35,9 @@ namespace csci7551_project
     
     inline double cost()
     { 
+      // std::cout << "cost() with edgeFlow, freeFlowTravelTime, steadyStateCapacity: ";
+      // std::cout << edgeFlow << ", " << freeFlowTravelTime << ", " << steadyStateCapacity;
+      // std::cout << " yields " << costFunction->cost(edgeFlow, freeFlowTravelTime, steadyStateCapacity) << std::endl;
       return costFunction->cost(edgeFlow, freeFlowTravelTime, steadyStateCapacity); 
     }
     inline double weight() { return distance; }

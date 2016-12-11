@@ -40,7 +40,7 @@ namespace csci7551_project
       Intersection* source = sourceIterator->second;
       Intersection* destination = destinationIterator->second;
       Roadway* newEdge = (Roadway*) source->connect(destination, this->costFunction);
-      newEdge->setFreeFlowTime(t)->setCapacity(c)->setDistance(euclidianDistance(source, destination));
+      newEdge->setFlow(0)->setFreeFlowTime(t)->setCapacity(c)->setDistance(euclidianDistance(source, destination));
       E.push_back(newEdge);
     }
   }
@@ -152,18 +152,22 @@ namespace csci7551_project
     std::vector<bool> buddyWait(odPairs->size() * 2, true);
     std::vector<bool> stoppingConditionNotMet(odPairs->size() * 2, true);
     std::vector<bool> hasFrontier(odPairs->size() * 2, true);
-    std::vector<std::list<Intersection*> > intersections(odPairs->size() * 2);
+    std::list<Intersection*> temp;
+    std::vector<std::list<Intersection*> > intersections(odPairs->size() * 2, temp);
     std::vector<std::list<std::pair<double,double> > > coordinates(odPairs->size() * 2);
     std::vector<std::list<double> > distances(odPairs->size() * 2);
     std::vector<BidirectionalAStar*> search(odPairs->size() * 2, 0);
     Intersection *forwardMeeting = 0, *reverseMeeting = 0;
     bool meetingPointFound = false, searchSpaceExhausted = false;
     Path* result;
+    // TODO: cannot share member variables
+    std::map<std::string,Intersection*> sharedV = V;
+    std::vector<Roadway*> sharedE = E;
 
     // std::cout << "Sizes of shared memory buckets" << std::endl;
     // std::cout << stoppingConditionNotMet.size() << " " << hasFrontier.size() << " " << intersections.size() << " " << coordinates.size() << " " << distances.size() << " " << search.size() << std::endl;
 
-    #pragma omp parallel shared(odPairs,paths,intersections,coordinates,distances,search,hasFrontier,stoppingConditionNotMet,buddyWait) private(i,result) firstprivate(forwardMeeting,reverseMeeting,meetingPointFound,searchSpaceExhausted)
+    #pragma omp parallel shared(sharedV,sharedE,odPairs,paths,intersections,coordinates,distances,search,hasFrontier,stoppingConditionNotMet,buddyWait) private(i,result) firstprivate(forwardMeeting,reverseMeeting,meetingPointFound,searchSpaceExhausted)
     {
       #pragma omp for schedule(static)
       for (i = 0; i < odPairs->size() * 2; ++i)
@@ -174,9 +178,9 @@ namespace csci7551_project
           search[i] = new BidirectionalAStar(thisSource, FORWARD);
         else
           search[i] = new BidirectionalAStar(thisDestination, BACKWARD);
-        std::cout << "calling shortestPath() for jobID " << i << std::endl;
+        // std::cout << "calling shortestPath() for jobID " << i << std::endl;
         shortestPath((*odPairs)[i/2], result, intersections, coordinates, distances, search, i, hasFrontier, stoppingConditionNotMet, buddyWait, forwardMeeting, reverseMeeting, meetingPointFound, searchSpaceExhausted);
-        std::cout << "ended shortestPath() for jobID " << i << std::endl;
+        // std::cout << "ended shortestPath() for jobID " << i << std::endl;
         // #pragma omp critical
         
         // buddyWait[jobID] = false;
@@ -200,7 +204,7 @@ namespace csci7551_project
 
   void RoadNetwork::shortestPath (ODPair& od, Path*& result, std::vector<std::list<Intersection*> >& intersections, std::vector<std::list<std::pair<double,double> > >& coordinates, std::vector<std::list<double> >& distances, std::vector<BidirectionalAStar*>& search, int& jobID, std::vector<bool>& hasFrontier, std::vector<bool>& stoppingConditionNotMet, std::vector<bool>& buddyWait, Intersection*& forwardMeeting, Intersection*& reverseMeeting, bool& meetingPointFound, bool& searchSpaceExhausted)
   {
-    // std::cout << std::setw(4) << jobID << " entering shortestPath()" << std::endl;
+    // std::cout << myDirection(jobID) << " entering shortestPath()" << std::endl;
     result = new Path(od.origin, od.destination, od.flow);
 
     // tell my buddy that i'm here:
@@ -214,39 +218,49 @@ namespace csci7551_project
     
     while (stoppingConditionNotMet[jobID])
     {
-      // std::cout << std::setw(4) << jobID << " in while loop after setup of initial variables." << std::endl;
+      // std::cout << myDirection(jobID) << " in while loop after setup of initial variables." << std::endl;
 
       // load data from my half of the search into the shared buckets
       // comparison is a cross-product heuristic to find the best candidate
       // intersections to expand each half of the search
       search[jobID]->loadCompareList(intersections[jobID],coordinates[jobID],distances[jobID]);
-      // std::cout << std::setw(4) << jobID << " compare list loaded from this jobID's BidirectionalAStar search" << std::endl;
+      // std::cout << myDirection(jobID) << " compare list loaded from this jobID's BidirectionalAStar search" << std::endl;
       // there may be no intersections left to select
       if (intersections[jobID].size() == 0)
         hasFrontier[jobID] = false;
+
+      buddyWait[jobID] = false;
+      // manual spin-wait for my buddy
+      while (waitForMyBuddy(jobID,buddyWait)) 
+      {
+        // std::cout << ".";
+      }
+      buddyWait[jobID] = true;      
 
       // master section
       #pragma omp critical
       if (isLocalMaster(jobID))
       {
-        std::cout << "frontier set: " << std::endl;
-        for (std::vector<std::list<Intersection*> >::iterator iter = intersections.begin(); iter != intersections.end(); ++iter)
-        {
-          for (std::list<Intersection*>::iterator jter = (*iter).begin(); jter != (*iter).end(); jter++)
-          {
-            IntersectionProperty* prop = (IntersectionProperty*) (*jter)->getProps();
-            std::cout << prop->getName() << " ";
-          }
-        }
-        std::cout << std::setw(4) << jobID << " master - critical section" << std::endl;
-        meetingPointFound = stoppingTest(intersections[jobID],intersections[jobID+1],forwardMeeting,reverseMeeting);
-        std::cout << "meeting point: " << forwardMeeting << " == " << reverseMeeting << ": " << ((forwardMeeting!=0)&&(forwardMeeting==reverseMeeting) ? "found" : "not found") << std::endl;
+        // std::cout << "frontier set: " << std::endl;
+        // for (std::vector<std::list<Intersection*> >::iterator iter = intersections[jobID].begin(); iter != intersections[jobID].end(); ++iter)
+        // {
+          // std::cout << " loopy" << std::endl;
+        // for (std::list<Intersection*>::iterator iter = intersections[jobID].begin(); iter != intersections[jobID].end(); iter++)
+        // {
+        //   std::cout << "found intersection: ";
+        //   IntersectionProperty* prop = (IntersectionProperty*) (*iter)->getProps();
+        //   std::cout << prop->getName() << " ";
+        // }
+        // }
+        std::cout << myDirection(jobID) << " master - critical section" << std::endl;
+        meetingPointFound = stoppingTest(search[jobID],search[jobID+1],forwardMeeting,reverseMeeting);
+        std::cout << "meeting point: " << forwardMeeting << " == " << reverseMeeting << ": " << ((forwardMeeting!=0)&&(forwardMeeting==reverseMeeting) ? (forwardMeeting->getName()) : "not found") << std::endl;
         searchSpaceExhausted = (!hasFrontier[jobID] && !hasFrontier[jobID+1]);
         // do we have a meeting point?  or, are both frontiers empty?
         std::cout << "meetingPointFound: " << meetingPointFound << " searchSpaceExhausted: " << searchSpaceExhausted << std::endl;
         if (meetingPointFound || searchSpaceExhausted)
         {
-          std::cout << std::setw(4) << jobID << " master - stopping condition or search space exhausted" << std::endl;
+          std::cout << myDirection(jobID) << " master - stopping condition or search space exhausted" << std::endl;
           // if stoppingTest was true, it also had the side effect of removing all
           // intersections except the ones that match (since finding those is part
           // of how the stopping test occurs, that O(n^2) operation should only
@@ -257,10 +271,15 @@ namespace csci7551_project
         // choose next selection for both searches 
         else
         {
-          std::cout << std::setw(4) << jobID << " master - selecting best frontier node" << std::endl;
-          compareLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]);
-          std::cout << std::setw(4) << jobID << " master - selecting best frontier complete" << std::endl;
-
+          std::cout << myDirection(jobID) << " master - selecting best frontier node and then clearing lists" << std::endl;
+          // this also clears the lists
+          search[jobID]->compareLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]);
+          std::cout << myDirection(jobID) << " master - selecting best frontier complete" << std::endl;
+          std::cout << myDirection(jobID) << " master - best frontier buckets have sizes " << intersections[jobID].size() << " and " << intersections[jobID].size() << std::endl;
+          Intersection* left = intersections[jobID].front();
+          Intersection* right = intersections[jobID+1].front();
+          std::cout << "I have my pointers" << std::endl;
+          std::cout << myDirection(jobID) << " master - chose: " << left->getName() << " and " << right->getName() << std::endl;
         }
       }
 
@@ -270,44 +289,69 @@ namespace csci7551_project
       {
         if (hasFrontier[jobID])
         {
-          // std::cout << std::setw(4) << jobID << " master|slave - move new node from frontier to selected" << std::endl;
+          // std::cout << myDirection(jobID) << " master|slave - here's my selected node to move" << std::endl;
+
+          std::cout << intersections[jobID].front()->getName() << std::endl;
           // continue search
+          // std::cout << myDirection(jobID) << " master|slave - move new node from frontier to selected" << std::endl;
           search[jobID]->moveToSelected(intersections[jobID].front());
-          intersections.clear();
-          // std::cout << std::setw(4) << jobID << " master|slave - move completed, this iteration's intersections cleared" << std::endl;
+          // std::cout << myDirection(jobID) << " master|slave - move completed, this iteration's intersections cleared" << std::endl;
+          std::cout << myDirection(jobID) << " master|slave - printing current search state" << std::endl;
+          search[jobID]->printLists();
         }
       }
-      
+
+      buddyWait[jobID] = false;
+      // manual spin-wait for my buddy
+      while (waitForMyBuddy(jobID,buddyWait)) 
+      {
+        // std::cout << ".";
+      }
+      buddyWait[jobID] = true; 
+
       // master section
       #pragma omp critical
       if (isLocalMaster(jobID))
       {
         if (meetingPointFound)
         {
-          std::cout << std::setw(4) << jobID << " master - meeting point found, merging" << std::endl;
+          std::cout << myDirection(jobID) << " master - meeting point found, merging" << std::endl;
 
           // shortest path found
           // end search [master]
           // merge paths found
           // intersections has our intersection where they met
           // attach the two paths from search
+          std::cout << myDirection(jobID) << " master - merge the searches" << std::endl;
           result->route = search[jobID]->mergeBidirectionalPaths(search[jobID+1], forwardMeeting);
-          std::cout << std::setw(4) << jobID << " master - merge completed" << std::endl;
-          clearLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]); 
-          std::cout << std::setw(4) << jobID << " master - all shared memory for this job pair was cleared" << std::endl;
+          std::cout << myDirection(jobID) << " master - merge completed" << std::endl;
+          search[jobID]->clearLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]); 
+          std::cout << myDirection(jobID) << " master - all shared memory for this job pair was cleared" << std::endl;
         }
         else if (searchSpaceExhausted)
         {
           // search space was exhausted, so stoppingConditionNotMet should be tripped false
-          std::cout << std::setw(4) << jobID << " master - doing nothing since search space was exhausted" << std::endl;
+          std::cout << myDirection(jobID) << " master - clearing the buckets" << std::endl;
+          search[jobID]->clearLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]); 
+          std::cout << myDirection(jobID) << " master - doing nothing since search space was exhausted" << std::endl;
         }
         else
         {
           // continue
+          std::cout << myDirection(jobID) << " master - meeting point not found, continuing search" << std::endl;
+          std::cout << myDirection(jobID) << " master - clearing the buckets" << std::endl;
+          search[jobID]->clearLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]); 
         }
       }
+      buddyWait[jobID] = false;
+      // manual spin-wait for my buddy
+      while (waitForMyBuddy(jobID,buddyWait)) 
+      {
+        // std::cout << ".";
+      }
+      buddyWait[jobID] = true;  
     }
-    std::cout << std::setw(4) << jobID << " master|slave - end of shortestPath" << std::endl;
+    std::cout << myDirection(jobID) << " master|slave - end of shortestPath" << std::endl;
   }
 
   std::string RoadNetwork::toString ()
@@ -338,21 +382,30 @@ namespace csci7551_project
     return (pid % 2) == 0;
   }
 
-  bool RoadNetwork::stoppingTest (std::list<Intersection*>& a, std::list<Intersection*>& b, Intersection*& aMatch, Intersection*& bMatch)
+  // test the two selected lists for a connection
+  bool RoadNetwork::stoppingTest (BidirectionalAStar* lhs, BidirectionalAStar* rhs, Intersection*& aMatch, Intersection*& bMatch)
   {
-    for (std::list<Intersection*>::iterator i = a.begin(); i != a.end(); ++i)
+    std::pair<AStarMapIterator,AStarMapIterator> a = lhs->getSelectedIterator();
+    std::pair<AStarMapIterator,AStarMapIterator> b = rhs->getSelectedIterator();
+    for (AStarMapIterator i = a.first; i != a.second; ++i)
     {
-      for (std::list<Intersection*>::iterator j = b.begin(); j != b.end(); ++j)
+      for (AStarMapIterator j = b.first; j != b.second; ++j)
       {
-        if ((*i)!=0 && (*i)==(*j))
+        if ((*i).first!=0 && (*i).first==(*j).first)
         {
-          aMatch = (*i);
-          bMatch = (*j);
+          // @TODO: these should be the same so maybe just "match"
+          aMatch = (*i).first;
+          bMatch = (*j).first;
           return true;
         }
       }
     }  
     return false;
+  }
+
+  std::string myDirection (int id)
+  {
+    return (((id % 2) == 0) ? "forward " : "backward "); 
   }
 
   void printTree (Intersection* s, int depth)
@@ -384,5 +437,4 @@ namespace csci7551_project
   {
     return ((id % 2) == 0) ? FORWARD : BACKWARD;
   }
-
 }
