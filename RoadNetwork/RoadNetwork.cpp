@@ -323,7 +323,7 @@ namespace csci7551_project
           // intersections has our intersection where they met
           // attach the two paths from search
           std::cout << myDirection(jobID) << " master - merge the searches" << std::endl;
-          result->route = search[jobID]->mergeBidirectionalPaths(search[jobID+1], forwardMeeting);
+          search[jobID]->mergeBidirectionalPaths(search[jobID+1], forwardMeeting, result->route);
           std::cout << myDirection(jobID) << " master - merge completed" << std::endl;
           search[jobID]->clearLists(intersections[jobID],coordinates[jobID],distances[jobID],intersections[jobID+1],coordinates[jobID+1],distances[jobID+1]); 
           std::cout << myDirection(jobID) << " master - all shared memory for this job pair was cleared" << std::endl;

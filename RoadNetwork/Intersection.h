@@ -11,12 +11,13 @@ namespace csci7551_project
   class Roadway;
 
   struct NodeCostTuple {
-    NodeCostTuple(Intersection* a, double d, double c): 
+    NodeCostTuple(Intersection* a, Roadway* r, double d, double c): 
       node(a),
       distance(d),
-      cost(c) {}
+      cost(c),
+      road(r) {}
     Intersection* node;
-    Roadway* roadwayToNode;
+    Roadway* road;
     double distance;
     double cost;
   };

@@ -53,10 +53,10 @@ namespace csci7551_project
           newFrontier->setPathDistance(totalDistanceViaThisPath);
           newFrontier->setPathCost(totalCostViaThisPath);
           // add path so far
-          newFrontier->setPathAndAppend(parent->getPath(), parent->node);
+          newFrontier->setPathAndAppend(parent->getPath(), j->road);
           // add it to the frontier
           frontier.insert(AStarMapTuple((*j).node,newFrontier));
-          std::cout << directionString << " updateFrontier, found child: " << (*j).node->getName() << std::endl;
+          std::cout << directionString << " updateFrontier, found child: " << j->node->getName() << std::endl;
         }
         // if it's already in frontier (only), check that this isn't a lower-cost path to it
         else if ((frontierIterator != frontier.end()) && (selectedIterator == selected.end()))
@@ -67,8 +67,8 @@ namespace csci7551_project
             // the way we got to it this time is quicker. update path and distance
             node->setPathDistance(totalDistanceViaThisPath);
             node->setPathCost(totalCostViaThisPath);
-            node->setPathAndAppend(parent->getPath(), parent->node);
-            std::cout << directionString << " updateFrontier, updated child cost: " << (*j).node->getName() << std::endl;
+            node->setPathAndAppend(parent->getPath(), j->road);
+            std::cout << directionString << " updateFrontier, updated child cost: " << j->node->getName() << std::endl;
           }
         }
       }
@@ -119,56 +119,62 @@ namespace csci7551_project
       return false;
   }
 
-  std::list<Roadway*> BidirectionalAStar::mergeBidirectionalPaths(BidirectionalAStar* reverseSearch, Intersection* meetingPoint)
+  void BidirectionalAStar::mergeBidirectionalPaths(BidirectionalAStar* reverseSearch, Intersection* meetingPoint, std::list<Roadway*>& output)
   {
-    std::list<Roadway*> output;
-    std::list<Intersection*> leftPath = this->getAStarNodeFromIntersection(meetingPoint)->getPath();
-    std::list<Intersection*> rightPath = reverseSearch->getAStarNodeFromIntersection(meetingPoint)->getPath();
-    
-    std::cout << "left path: ";
-    for (std::list<Intersection*>::iterator i = leftPath.begin(); i != leftPath.end(); ++i)
+    output.clear();
+    std::list<Roadway*> leftPath = this->getAStarNodeFromIntersection(meetingPoint)->getPath();
+    std::list<Roadway*> rightPath = reverseSearch->getAStarNodeFromIntersection(meetingPoint)->getPath();
+
+    std::cout << "merging two paths into one" << std::endl;
+
+    output.merge(leftPath);
+    output.merge(rightPath);
+
+    std::cout << "shortest path found: ";
+    std::cout << (*output.begin())->getSourceIntersection()->getName();
+    for (std::list<Roadway*>::iterator i = output.begin(); i != output.end(); ++i)
     {
-      std::cout << (*i)->getName() << ", ";
+      std::cout << " -> " << (*i)->getDestinationIntersection()->getName();
     }
     std::cout << std::endl;
 
-    std::cout << "merge with boilerplate init complete" << std::endl;
-    for (SlidingIntersectionIterator i = SlidingIntersectionIterator(leftPath.begin(),(leftPath.begin()++)); i.second != leftPath.end(); (i.first)++, (i.second)++)
-    {
-      // find all the edges between successive values
-      std::cout << "merge - we have an iterator for leftPath" << std::endl;
-      std::vector<Roadway*> outRoads = (*i.first)->getOutRoads();
-      for (std::vector<Roadway*>::iterator j = outRoads.begin(); j != outRoads.end(); ++j) 
-      {
-        std::cout << "merge - we have an iterator for the roadways" << std::endl;
-        std::cout << "comparing " << (*j)->getDestinationIntersection()->getName() << " with " << (*(i.second))->getName() << std::endl;
-        if ((*j)->getDestinationIntersection() == (*(i.second)))
-        {
-          std::cout << "merge - pushing back road between " << (*(i.first))->getName() << " and " << (*(i.second))->getName() << std::endl;
-          output.push_back((*j));
-          j = outRoads.end();
-        }
-      }
-    }
+    // do something to "output"
 
-    for (SlidingReverseIntersectionIterator i = SlidingIntersectionIterator((leftPath.end()--),(leftPath.end())); i.second != leftPath.begin(); (i.first)--, (i.second)--)
-    {
-      // find all the edges between successive values
-      std::vector<Roadway*> inRoads = (*(i.second))->getInRoads();
-      std::cout << "merge - we have an iterator for rightPath" << std::endl;
-      for (std::vector<Roadway*>::iterator j = inRoads.begin(); j != inRoads.end(); ++j)
-      {
-        std::cout << "merge - we have an iterator for the second roadways" << std::endl;
-        std::cout << "comparing " << (*j)->getDestinationIntersection()->getName() << " with " << (*(i.second))->getName() << std::endl;
-        if ((*j)->getSourceIntersection() == (*(i.first)))
-        {
-          std::cout << "merge - pushing back road between " << (*(i.first))->getName() << " and " << (*(i.second))->getName() << std::endl;
-          output.push_back((*j));
-          j = inRoads.end();
-        }
-      }
-    }
-    return output;
+    // for (SlidingIntersectionIterator i = SlidingIntersectionIterator(leftPath.begin(),(leftPath.begin()++)); i.second != leftPath.end(); (i.first)++, (i.second)++)
+    // {
+    //   // find all the edges between successive values
+    //   std::cout << "merge - we have an iterator for leftPath" << std::endl;
+    //   std::vector<Roadway*> outRoads = (*i.first)->getOutRoads();
+    //   for (std::vector<Roadway*>::iterator j = outRoads.begin(); j != outRoads.end(); ++j) 
+    //   {
+    //     std::cout << "merge - we have an iterator for the roadways" << std::endl;
+    //     std::cout << "comparing " << (*j)->getDestinationIntersection()->getName() << " with " << (*(i.second))->getName() << std::endl;
+    //     if ((*j)->getDestinationIntersection() == (*(i.second)))
+    //     {
+    //       std::cout << "merge - pushing back road between " << (*(i.first))->getName() << " and " << (*(i.second))->getName() << std::endl;
+    //       output.push_back((*j));
+    //       j = outRoads.end();
+    //     }
+    //   }
+    // }
+
+    // for (SlidingReverseIntersectionIterator i = SlidingIntersectionIterator((leftPath.end()--),(leftPath.end())); i.second != leftPath.begin(); (i.first)--, (i.second)--)
+    // {
+    //   // find all the edges between successive values
+    //   std::vector<Roadway*> inRoads = (*(i.second))->getInRoads();
+    //   std::cout << "merge - we have an iterator for rightPath" << std::endl;
+    //   for (std::vector<Roadway*>::iterator j = inRoads.begin(); j != inRoads.end(); ++j)
+    //   {
+    //     std::cout << "merge - we have an iterator for the second roadways" << std::endl;
+    //     std::cout << "comparing " << (*j)->getDestinationIntersection()->getName() << " with " << (*(i.second))->getName() << std::endl;
+    //     if ((*j)->getSourceIntersection() == (*(i.first)))
+    //     {
+    //       std::cout << "merge - pushing back road between " << (*(i.first))->getName() << " and " << (*(i.second))->getName() << std::endl;
+    //       output.push_back((*j));
+    //       j = inRoads.end();
+    //     }
+    //   }
+    // }
   }
 
   AStarNode* BidirectionalAStar::getAStarNodeFromIntersection (Intersection* target)

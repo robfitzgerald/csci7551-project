@@ -43,10 +43,11 @@ namespace csci7551_project
     std::vector<NodeCostTuple> result;
     for (int i = 0; i < flows.size(); ++i)
     {
-      Intersection* dest = ((Roadway*) flows[i])->getDestinationIntersection();
-      double c = ((Roadway*) flows[i])->cost();
-      double d = ((Roadway*) flows[i])->getDistance();
-      NodeCostTuple neighbor(dest,d,c);
+      Roadway* road = ((Roadway*) flows[i]);
+      Intersection* dest = road->getDestinationIntersection();
+      double c = road->cost();
+      double d = road->getDistance();
+      NodeCostTuple neighbor(dest,road,d,c);
       result.push_back(neighbor);
     } 
     return result;
@@ -58,10 +59,11 @@ namespace csci7551_project
     std::vector<NodeCostTuple> result;
     for (int i = 0; i < flows.size(); ++i)
     {
-      Intersection* dest = ((Roadway*) flows[i])->getSourceIntersection();
-      double c = ((Roadway*) flows[i])->cost();
-      double d = ((Roadway*) flows[i])->getDistance();
-      NodeCostTuple neighbor(dest,d,c);
+      Roadway* road = ((Roadway*) flows[i]);
+      Intersection* dest = road->getSourceIntersection();
+      double c = road->cost();
+      double d = road->getDistance();
+      NodeCostTuple neighbor(dest,road,d,c);
       result.push_back(neighbor);
     } 
     return result;

@@ -46,14 +46,14 @@ namespace csci7551_project
       }
     ~AStarNode() { path.clear(); }
 
-    inline std::list<Intersection*> getPath () { return path; }
-    inline void setPath (Intersection* i) { path.push_back(i); }
-    inline void setPath (std::list<Intersection*> p) { path = p; }
-    inline void setPathAndAppend (std::list<Intersection*> p, Intersection* v) 
+    inline std::list<Roadway*> getPath () { return path; }
+    inline void setPath (Roadway* i) { path.push_back(i); }
+    inline void setPath (std::list<Roadway*> p) { path = p; }
+    inline void setPathAndAppend (std::list<Roadway*> p, Roadway* r) 
     { 
       path.clear(); 
       path = p; 
-      path.push_back(v);
+      path.push_back(r);
     }
     inline void setPathDistance (double d) { pathDistance = d; }
     inline double getPathDistance () { return pathDistance; }
@@ -75,7 +75,7 @@ namespace csci7551_project
     double pathDistance, pathCost;
     A_STAR_DIRECTION direction;
     // EXPLORE_STATE state;
-    std::list<Intersection*> path;
+    std::list<Roadway*> path;
   };
 
   // http://stackoverflow.com/questions/25122932/pointers-as-keys-in-map-c-stl
@@ -89,9 +89,9 @@ namespace csci7551_project
     BidirectionalAStar (Intersection* s, A_STAR_DIRECTION d): 
       direction(d)
     {
-      NodeCostTuple source(s,0,0);
+      NodeCostTuple source(s,0,0,0);
       AStarNode* n = new AStarNode(source);
-      n->setPath(s);
+      // n->setPath(s);
       frontier.insert(std::pair<Intersection*,AStarNode*>(s,n));
       moveToSelected(s);
     }
@@ -112,7 +112,7 @@ namespace csci7551_project
     void loadCompareList (std::list<Intersection*>&, std::list<std::pair<double, double> >&, std::list<double>&);
     bool moveToSelected (Intersection*);
     std::pair<AStarMapIterator,AStarMapIterator> getSelectedIterator () { return std::pair<AStarMapIterator,AStarMapIterator>(selected.begin(),selected.end()); }
-    std::list<Roadway*> mergeBidirectionalPaths(BidirectionalAStar*, Intersection*);
+    void mergeBidirectionalPaths(BidirectionalAStar*, Intersection*, std::list<Roadway*>&);
     AStarNode* getAStarNodeFromIntersection (Intersection*);
     std::list<FrontierCost> frontierCosts ();
     void printLists();
